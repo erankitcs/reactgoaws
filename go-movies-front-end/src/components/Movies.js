@@ -33,13 +33,11 @@ const Movies = () => {
             headers: headers
         }
     
-        fetch(`http://localhost:8080/movies`,requestOptions)
+        fetch(`/movies`,requestOptions)
             .then( (response) => {
-                console.log(response)
                 return response.json()
             })
             .then( (data) => {
-                console.log(data)
                 setMovies(data)
             })
             .catch( (err => {

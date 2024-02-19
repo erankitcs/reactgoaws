@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -23,8 +24,10 @@ func (u *User) PasswordMatches(plainText string) (bool, error) {
 		switch {
 		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
 			//invalid password
+			fmt.Printf("Mismatch-%s", err)
 			return false, nil
 		default:
+			fmt.Println(err)
 			return false, err
 		}
 

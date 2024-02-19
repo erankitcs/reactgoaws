@@ -49,8 +49,9 @@ func main() {
 		TokenExpiry:   time.Minute * 15,
 		RefreshExpiry: time.Hour * 24,
 		CookiePath:    "/",
-		CookieName:    "__Host-refresh_token",
-		CookieDomain:  app.CookieDomain,
+		//CookieName:    "__Host-refresh_token", does not work on chrom or Edge
+		CookieName:   "refresh_token",
+		CookieDomain: app.CookieDomain,
 	}
 	// start a web server
 	log.Println("Starting server on port", port)
