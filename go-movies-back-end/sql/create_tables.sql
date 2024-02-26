@@ -119,6 +119,6 @@ INSERT INTO public.movies_genres (movie_id, genre_id)
 values (3,9);
 INSERT INTO public.movies_genres (movie_id, genre_id)
 values (3,7);
-
+/* password is secret   */
 INSERT INTO public.users (first_name, last_name, email, password, created_at, updated_at)
 values ('Admin', 'User', 'admin@example.com','$2a$12$jesVW07pibHnym7QbMN/BOHseAM65uDVetWADC.jeaIoi/6mlGN66', '2022-09-23','2022-09-23');
