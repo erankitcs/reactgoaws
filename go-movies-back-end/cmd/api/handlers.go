@@ -2,10 +2,15 @@ package main
 
 import (
 	"backend/internal/models"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v4"
@@ -218,4 +223,118 @@ func (app *application) AllGenres(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = app.writeJSON(w, http.StatusOK, genres)
+}
+
+func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request) {
+	var movie models.Movie
+
+	err := app.readJSON(w, r, &movie)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// try to get an image
+	movie = app.getPoster(movie)
+
+	movie.CreatedAt = time.Now()
+	movie.UpdatedAt = time.Now()
+
+	newID, err := app.DB.InsertMovie(movie)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// now handle genres
+	err = app.DB.UpdateMovieGenres(newID, movie.GenresArray)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	resp := JSONReponse{
+		Error:   false,
+		Message: "movie updated",
+	}
+	app.writeJSON(w, http.StatusAccepted, resp)
+}
+
+func (app *application) getPoster(movie models.Movie) models.Movie {
+	type TheMovieDB struct {
+		Page    int `json:"page"`
+		Results []struct {
+			PosterPath string `json:"poster_path"`
+		} `json:"results"`
+		TotalPages int `json:"total_pages"`
+	}
+
+	client := &http.Client{}
+	theUrl := fmt.Sprintf("https://api.themoviedb.org/3/search/movie?api_key=%s", app.APIKey)
+	req, err := http.NewRequest("GET", theUrl+"&query="+url.QueryEscape(movie.Title), nil)
+
+	if err != nil {
+		log.Println(err)
+		return movie
+	}
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return movie
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return movie
+	}
+	var responseObj TheMovieDB
+
+	json.Unmarshal(bodyBytes, responseObj)
+
+	if len(responseObj.Results) > 0 {
+		movie.Image = responseObj.Results[0].PosterPath
+	}
+	return movie
+}
+
+func (app *application) UpdateMovie(w http.ResponseWriter, r *http.Request) {
+	var payload models.Movie
+
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	movie, err := app.DB.OneMovie(payload.ID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	movie.Title = payload.Title
+	movie.Description = payload.Description
+	movie.ReleaseDate = payload.ReleaseDate
+	movie.MPAARating = payload.MPAARating
+	movie.RunTime = payload.RunTime
+	movie.UpdatedAt = time.Now()
+
+	err = app.DB.UpdateMovie(*movie)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// now handle genres
+	err = app.DB.UpdateMovieGenres(payload.ID, payload.GenresArray)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	resp := JSONReponse{
+		Error:   false,
+		Message: "movie updated",
+	}
+	app.writeJSON(w, http.StatusAccepted, resp)
 }
