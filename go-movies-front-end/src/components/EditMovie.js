@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import {  json, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import {  useNavigate, useOutletContext, useParams } from "react-router-dom";
 import Input from "./form/Input";
 import Select from "./form/Select";
 import Textarea from "./form/TextArea";
 import Checkbox from "./form/Checkbox";
+import Swal from 'sweetalert2'
 const EditMovie = () => {
     const navigate = useNavigate();
     const { jwtToken } = useOutletContext();
@@ -33,7 +34,7 @@ const EditMovie = () => {
         mpaa_rating: "",
         description: "",
         genres: [],
-        genres_array: [Array[13].fill(false)]
+        genres_array: [Array(13).fill(false)]
     });
 
     // get id from the URL
@@ -43,6 +44,7 @@ const EditMovie = () => {
     }
 
     useEffect( () => {
+        console.log("use effect called")
         if (jwtToken === "") {
             navigate("/login")
             return;
@@ -58,7 +60,7 @@ const EditMovie = () => {
                 mpaa_rating: "",
                 description: "",
                 genres: [],
-                genres_array: [Array[13].fill(false)]
+                genres_array: [Array(13).fill(false)]
             })
             const headers = new Headers();
             headers.append("Content-Type", "application/json")
@@ -71,6 +73,7 @@ const EditMovie = () => {
             fetch("/genres", requestOption)
                 .then((response) => response.json())
                 .then((data) => {
+                    //console.log(data)
                     const checks = [];
                     data.forEach(g => {
                         checks.push({id: g.id, checked: false, genre: g.genre});
@@ -80,6 +83,7 @@ const EditMovie = () => {
                         genres: checks,
                         genres_array: [],
                     }))
+                    //console.log(checks)
                 })
                 .catch( err => {
                     console.log(err)
@@ -169,7 +173,7 @@ const EditMovie = () => {
         requestBody.runtime = parseInt(movie.runtime, 10);
 
         let requestOptions = {
-            body: json.stringify(requestBody),
+            body: JSON.stringify(requestBody),
             method: method,
             headers: headers,
             credentials: "include"
@@ -217,11 +221,52 @@ const EditMovie = () => {
             genres_array: tmpIDs,
         })
     }
+
+    const confirmDelete = () => {
+        Swal.fire({
+            title: "Delete Movie?",
+            text: "You won't be able to undo this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+          }).then((result) => {
+            if (result.isConfirmed) {
+                let headers = new Headers();
+                headers.append("Authorization","Bearer "+ jwtToken);
+                const requestOptions = {
+                    headers: headers,
+                    method: "DELETE"
+                }
+                fetch(`/admin/movie/${movie.id}`, requestOptions)
+                    .then( (response) => response.json())
+                    .then((data) => {
+                        if ( data.error) {
+                            console.log(data.error);
+                        } else {
+                            navigate("/manage-catalogue");
+                        }
+                    })
+                    .catch( err => {
+                        console.log(err)
+                    })
+            }
+          });
+    }
+
+
+    if ( error !== null) {
+        return(
+            <div>Error: {error.message}</div>
+        )
+    } else
+    {
     return(
         <div>
             <h2>Add/Edit Movie</h2>
             <hr></hr>
-            <pre>{JSON.stringify(movie, null, 3)}</pre>
+            {/* <pre>{JSON.stringify(movie, null, 3)}</pre> */}
             <form onSubmit={handleSubmit}>
                 <input type="hidden" name="id" value={movie.id} id="id"></input>
                 <Input
@@ -279,9 +324,14 @@ const EditMovie = () => {
                 <hr/>
                 <h3>Genres</h3>
                 {
-                    movie.genres && movie.genres.length > 1 &&
+                    console.log("Genres-", movie.genres)
+                }
+                {movie.genres && movie.genres.length > 1 &&
                     <>
-                        {Array.from(movie.genres).map((g, index) => {
+                    {
+                        console.log("genres")
+                    }
+                        {Array.from(movie.genres).map((g, index) => 
                             <Checkbox
                                 title={g.genre}
                                 name={"genre"}
@@ -293,15 +343,20 @@ const EditMovie = () => {
                                 value={g.id}
                                 checked={movie.genres[index].checked}
                             />
-                        })}
+                        )}
                     </>
                 }
                 <hr />
                 <button className="btn btn-primary">Save</button>
-
+                {movie.id > 0 && (
+                    <a href="#!" className="btn btn-danger ms-2" onClick={confirmDelete}>
+                        Delete Movie
+                    </a>
+                )}
             </form>
         </div>
     )
+    }
 }
 
 export default EditMovie;
