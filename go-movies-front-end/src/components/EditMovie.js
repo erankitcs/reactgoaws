@@ -239,8 +239,11 @@ const EditMovie = () => {
                     headers: headers,
                     method: "DELETE"
                 }
-                fetch(`/admin/movie/${movie.id}`, requestOptions)
-                    .then( (response) => response.json())
+                fetch(`/admin/movies/${movie.id}`, requestOptions)
+                    .then( (response) => {
+                        console.log(response)
+                        response.json()
+                    })
                     .then((data) => {
                         if ( data.error) {
                             console.log(data.error);
