@@ -71,7 +71,7 @@ func New(movies []*models.Movie) *Graph {
 			Resolve:     func(p graphql.ResolveParams) (interface{}, error) { return movies, nil },
 		},
 		"search": &graphql.Field{
-			Type:        movieType,
+			Type:        graphql.NewList(movieType),
 			Description: "Search movies by title",
 			Args: graphql.FieldConfigArgument{
 				"titleContains": &graphql.ArgumentConfig{
