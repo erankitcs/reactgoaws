@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime/multipart"
 	"net/http"
 )
 
@@ -52,6 +53,20 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, data in
 		return errors.New("body must contain a single JSON value")
 	}
 	return nil
+}
+
+func (app *application) readMultiPartForm(r *http.Request) (multipart.File, *multipart.FileHeader, error) {
+	maxMultiPartBytes := 1024 * 1024 * 20 // 20 MB
+	r.ParseMultipartForm(int64(maxMultiPartBytes))
+	// Get the uploaded file from the request
+	file, fileheader, err := r.FormFile("movievideofile")
+	if err != nil {
+		return nil, nil, err
+	}
+	defer file.Close()
+
+	return file, fileheader, nil
+
 }
 
 func (app *application) errorJSON(w http.ResponseWriter, err error, status ...int) error {

@@ -43,6 +43,7 @@ const ManageCatalogue = () => {
                         <th>Movie</th>
                         <th>Release Date</th>
                         <th>Rating</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,6 +56,16 @@ const ManageCatalogue = () => {
                             </td>
                             <td>{m.release_date}</td>
                             <td>{m.mpaa_rating}</td>
+                            <td><Link to={`/admin/movie/${m.id}/upload`}
+                                    state={
+                                        {
+                                            movieTitle: m.title
+                                        }
+                                    }
+                                 >
+                                 <button className="btn btn-outline-success btn-sm">Upload Video</button>
+                                 </Link>
+                            </td>
                         </tr>
                     ))}
                 </tbody>

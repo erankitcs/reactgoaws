@@ -3,6 +3,8 @@ package main
 import (
 	"backend/internal/repository"
 	"backend/internal/repository/dbrepo"
+	"backend/internal/storage"
+	"backend/internal/storage/localstorage"
 	"flag"
 	"fmt"
 	"log"
@@ -13,15 +15,17 @@ import (
 const port = 8080
 
 type application struct {
-	DSN          string
-	Domain       string
-	DB           repository.DatabaseRepo
-	auth         Auth
-	JWTSecret    string
-	JWTIssuer    string
-	JWTAudience  string
-	CookieDomain string
-	APIKey       string
+	DSN             string
+	Domain          string
+	DB              repository.DatabaseRepo
+	auth            Auth
+	JWTSecret       string
+	JWTIssuer       string
+	JWTAudience     string
+	CookieDomain    string
+	APIKey          string
+	rootStoragePath string
+	Storage         storage.VideoStorage
 }
 
 func main() {
@@ -35,6 +39,7 @@ func main() {
 	flag.StringVar(&app.CookieDomain, "jwt-domain", "localhost", "cookie domain")
 	flag.StringVar(&app.Domain, "domain", "example.com", "domain")
 	flag.StringVar(&app.APIKey, "api-key", "xyz", "api key")
+	flag.StringVar(&app.rootStoragePath, "rootstorage-path", "./moviestorage", "Root Storage Path")
 	flag.Parse()
 	// connect to the database
 	conn, err := app.connectToDB()
@@ -43,6 +48,10 @@ func main() {
 	}
 	app.DB = &dbrepo.PostgresDBRepo{DB: conn}
 	defer app.DB.Connection().Close()
+
+	app.Storage = &localstorage.LocalStorage{RootPath: app.rootStoragePath}
+
+	//fmt.Println(app.Storage.StorageDetails())
 
 	app.auth = Auth{
 		Issuer:        app.JWTIssuer,

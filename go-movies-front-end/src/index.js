@@ -12,6 +12,7 @@ import ManageCatalogue from './components/ManageCatalogue';
 import GraphQL from './components/GraphQL';
 import Login from './components/Login';
 import Movie from './components/Movie';
+import UploadMovieVideo from './components/UploadMovieVideo';
 const router = createBrowserRouter(
   [
     {
@@ -39,6 +40,9 @@ const router = createBrowserRouter(
         },
         {
           path: "/admin/movie/:id", element: <EditMovie />
+        },
+        {
+          path: "/admin/movie/:id/upload", element: <UploadMovieVideo />
         },
         {
           path: "/manage-catalogue", element: <ManageCatalogue />

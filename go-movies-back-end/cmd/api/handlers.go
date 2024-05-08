@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -404,4 +405,49 @@ func (app *application) moviesGraphQL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(j)
+}
+
+// Upload Video Functinality
+func (app *application) MovieUpload(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// lets upload the video of the movie
+	fmt.Printf("upload recieved-%d", movieID)
+	moviefile, moviefile_header, err := app.readMultiPartForm(r)
+	if err != nil {
+		fmt.Println(err)
+		app.errorJSON(w, err)
+		return
+	}
+	fmt.Println("Calling video upload")
+	filefile_ext := strings.Split(moviefile_header.Filename, ".")[1]
+	path, err := app.Storage.UploadVideo(moviefile, filefile_ext)
+	if err != nil {
+		fmt.Println(err)
+		app.errorJSON(w, err)
+		return
+	}
+	// insert movie video into database
+	var movieVideo models.MovieVideo
+	movieVideo.MovieID = movieID
+	movieVideo.VideoPath = path
+	movieVideo.CreatedAt = time.Now()
+	movieVideo.IsLatest = true
+	fmt.Println("Adding  video upload into database")
+	err = app.DB.InsertMovieVideo(movieVideo)
+	// return response back
+	if err != nil {
+		fmt.Println(err)
+		app.errorJSON(w, err)
+		return
+	}
+	resp := JSONReponse{
+		Error:   false,
+		Message: "movie video uploaded",
+	}
+	_ = app.writeJSON(w, http.StatusOK, resp)
 }

@@ -413,3 +413,33 @@ func (m *PostgresDBRepo) DeleteMovie(id int) error {
 
 	return nil
 }
+
+func (m *PostgresDBRepo) InsertMovieVideo(movieVideo models.MovieVideo) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	// Update all other movie videos for this movie to no longer be the latest
+	stmt := `update movies_videos set is_latest = 'f'
+			where movie_id = $1`
+	_, err := m.DB.ExecContext(ctx, stmt,
+		movieVideo.MovieID,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	stmt = `insert into movies_videos (movie_id, video_path, is_latest, created_at)
+			values ($1, $2, $3, $4)`
+	_, err = m.DB.ExecContext(ctx, stmt,
+		movieVideo.MovieID,
+		movieVideo.VideoPath,
+		movieVideo.IsLatest,
+		movieVideo.CreatedAt,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

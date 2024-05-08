@@ -29,6 +29,7 @@ func (app *application) routes() http.Handler {
 		mux.Put("/movies/0", app.InsertMovie)
 		mux.Patch("/movies/{id}", app.UpdateMovie)
 		mux.Delete("/movies/{id}", app.DeleteMovie)
+		mux.Post("/movies/{id}/upload", app.MovieUpload)
 	})
 	return mux
 }
