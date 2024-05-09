@@ -71,3 +71,5 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 
 ### Commands
 ` npm i react-router-dom`
+` npm install video-react`
+``

@@ -443,3 +443,30 @@ func (m *PostgresDBRepo) InsertMovieVideo(movieVideo models.MovieVideo) error {
 
 	return nil
 }
+
+// Get Video path from Movies_Videos table
+func (m *PostgresDBRepo) GetMovieVideo(id int) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	query := `
+		SELECT
+		  video_path
+		FROM
+		  movies_videos
+		where
+		  movie_id = $1
+		limit 1
+	`
+	var videoPath string
+	row := m.DB.QueryRowContext(ctx, query, id)
+
+	err := row.Scan(
+		&videoPath,
+	)
+
+	if err != nil && err != sql.ErrNoRows {
+		return "nil", err
+	}
+
+	return videoPath, nil
+}

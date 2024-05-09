@@ -451,3 +451,39 @@ func (app *application) MovieUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = app.writeJSON(w, http.StatusOK, resp)
 }
+
+// Movie Video Download
+func (app *application) MovieDownload(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideo, err := app.DB.GetMovieVideo(movieID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// get the video file from s3
+	video, videoInfo, err := app.Storage.GetVideo(movieVideo)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// write the video file to the response
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "video/mp4")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", videoInfo.Size()))
+
+	_, err = io.Copy(w, video)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	defer video.Close()
+
+}
