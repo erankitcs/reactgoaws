@@ -30,6 +30,6 @@ type MovieVideo struct {
 	ID        int       `json:"id"`
 	MovieID   int       `json:"movie_id"`
 	VideoPath string    `json:"video_path"`
-	CreatedAt time.Time `json:"-"`
-	IsLatest  bool      `json:"-"`
+	CreatedAt time.Time `json:"created_at"`
+	IsLatest  bool      `json:"is_latest"`
 }

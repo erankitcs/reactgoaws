@@ -487,3 +487,22 @@ func (app *application) MovieDownload(w http.ResponseWriter, r *http.Request) {
 	defer video.Close()
 
 }
+
+// A fuction which can return a list of videos uploaded for given movie
+func (app *application) MovieVideos(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideos, err := app.DB.GetMovieVideos(movieID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// return the response back
+	_ = app.writeJSON(w, http.StatusOK, movieVideos)
+}

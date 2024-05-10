@@ -470,3 +470,45 @@ func (m *PostgresDBRepo) GetMovieVideo(id int) (string, error) {
 
 	return videoPath, nil
 }
+
+// Get All Videos history from Movies_Videos table for given movie
+func (m *PostgresDBRepo) GetMovieVideos(id int) ([]models.MovieVideo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	query := `
+		SELECT
+		  id, movie_id, video_path, is_latest, created_at
+		FROM
+		  movies_videos
+		where
+		  movie_id = $1
+		order by created_at desc
+	`
+	rows, err := m.DB.QueryContext(ctx, query, id)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var videos []models.MovieVideo
+
+	for rows.Next() {
+		var video models.MovieVideo
+		err := rows.Scan(
+			&video.ID,
+			&video.MovieID,
+			&video.VideoPath,
+			&video.IsLatest,
+			&video.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		videos = append(videos, video)
+	}
+	return videos, nil
+}

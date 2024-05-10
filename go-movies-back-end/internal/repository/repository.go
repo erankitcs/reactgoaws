@@ -20,4 +20,5 @@ type DatabaseRepo interface {
 	DeleteMovie(id int) error
 	InsertMovieVideo(movieVideo models.MovieVideo) error
 	GetMovieVideo(id int) (string, error)
+	GetMovieVideos(id int) ([]models.MovieVideo, error)
 }
