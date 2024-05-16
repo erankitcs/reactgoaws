@@ -414,7 +414,7 @@ func (m *PostgresDBRepo) DeleteMovie(id int) error {
 	return nil
 }
 
-func (m *PostgresDBRepo) InsertMovieVideo(movieVideo models.MovieVideo) error {
+func (m *PostgresDBRepo) InsertMovieVideo(movieVideo models.MovieVideo) (*models.MovieVideo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 	// Update all other movie videos for this movie to no longer be the latest
@@ -425,23 +425,26 @@ func (m *PostgresDBRepo) InsertMovieVideo(movieVideo models.MovieVideo) error {
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	stmt = `insert into movies_videos (movie_id, video_path, is_latest, created_at)
-			values ($1, $2, $3, $4)`
-	_, err = m.DB.ExecContext(ctx, stmt,
+			values ($1, $2, $3, $4) returning id`
+	//var vid int
+	err = m.DB.QueryRowContext(ctx, stmt,
 		movieVideo.MovieID,
 		movieVideo.VideoPath,
 		movieVideo.IsLatest,
 		movieVideo.CreatedAt,
+	).Scan(
+		&movieVideo.ID,
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &movieVideo, nil
 }
 
 // Get Video from Movies_Videos table

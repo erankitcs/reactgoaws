@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -78,5 +79,6 @@ func (app *application) errorJSON(w http.ResponseWriter, err error, status ...in
 	var payload JSONReponse
 	payload.Error = true
 	payload.Message = err.Error()
+	fmt.Println(err)
 	return app.writeJSON(w, statusCode, payload)
 }

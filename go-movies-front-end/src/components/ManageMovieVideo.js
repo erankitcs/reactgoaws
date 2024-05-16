@@ -1,5 +1,5 @@
-import { useLocation, useNavigate, useParams, useOutletContext } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useLocation, useParams, useOutletContext } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import Input from "./form/Input";
 import SpinnerButton from "./form/SpinnerButton";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -7,7 +7,7 @@ import { faTrashCan, faCheck, faCheckSquare } from '@fortawesome/free-solid-svg-
 import Swal from 'sweetalert2'
 
 const ManageMovieVideo = () => {
-    const navigate = useNavigate();
+    //const navigate = useNavigate();
     const location = useLocation();
     const { movieTitle } = location.state;
     let { id } = useParams();
@@ -20,6 +20,9 @@ const ManageMovieVideo = () => {
     
     //const [ error, setError ] = useState(null);
     const [ errors, setErrors ] = useState([]);
+
+    // Var to reference input file element
+    const inputVideoFile = useRef(null);
 
     const Toast = Swal.mixin({
         toast: true,
@@ -81,13 +84,11 @@ const ManageMovieVideo = () => {
     
 
     const handleChange = () => (event) =>{
-        let value = event.target.value;
-        let name = event.target.name;
+        //let value = event.target.value;
+        //let name = event.target.name;
         let file = event.target.files[0];
-        console.log(value);
-        console.log(name);
-        console.log(file);
         setMovieVideoFile(file)
+        setErrors([]);
         
     }
 
@@ -97,7 +98,7 @@ const ManageMovieVideo = () => {
         let errors = []
         console.log(movieVideoFile);
         if (movieVideoFile === null) {
-            console.log("file found");
+            console.log("file not found");
             errors.push("movie_video_file");
             setErrors(errors);
             return false;
@@ -128,8 +129,29 @@ const ManageMovieVideo = () => {
             .then((data) => {
                 if (data.error) {
                     console.log(data.error)
+                    Toast.fire({
+                        icon: "error",
+                        title: "Failed to upload the video"
+                      });
                 } else {
-                    navigate("/manage-catalogue")
+                    Toast.fire({
+                        icon: "success",
+                        title: "Video has been uploaded"
+                      });
+                    // Mark old video as not latest
+                    let updatedMovieVideos = movieVideos.map(video => {
+                            video.is_latest = false;
+                        return video;
+                    });
+                    // Add the new video to the list of videos
+                    updatedMovieVideos = [...movieVideos, data];
+                    setMovieVideos(updatedMovieVideos);
+                    setMovieVideos(updatedMovieVideos);
+                    // Reset the form
+                    setMovieVideoFile(null);
+                    setMovieVideo({});
+                    inputVideoFile.current.value = "";
+                    //navigate("/manage-catalogue")
                 }
             })
             .catch( err => {
@@ -283,6 +305,7 @@ const ManageMovieVideo = () => {
                     onChange={handleChange("movie_video_file")}
                     errorDiv={ hasError("movie_video_file") ? "text-danger": "d-none" }
                     errorMsg={"Please select a video"}
+                    ref={inputVideoFile}
             />
             <button className="btn btn-primary">Upload</button>
         </form>

@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -438,18 +439,17 @@ func (app *application) MovieVidoeUpload(w http.ResponseWriter, r *http.Request)
 	movieVideo.CreatedAt = time.Now()
 	movieVideo.IsLatest = true
 	fmt.Println("Adding  video upload into database")
-	err = app.DB.InsertMovieVideo(movieVideo)
+	mv, err := app.DB.InsertMovieVideo(movieVideo)
 	// return response back
 	if err != nil {
 		fmt.Println(err)
 		app.errorJSON(w, err)
+		// Removing vidoe file uploaded.
+		app.Storage.DeleteVideo(path)
 		return
 	}
-	resp := JSONReponse{
-		Error:   false,
-		Message: "movie video uploaded",
-	}
-	_ = app.writeJSON(w, http.StatusOK, resp)
+
+	_ = app.writeJSON(w, http.StatusOK, mv)
 }
 
 // Movie Video Download
@@ -529,8 +529,14 @@ func (app *application) DeleteMovieVideo(w http.ResponseWriter, r *http.Request)
 	// delete the video from storage
 	err = app.Storage.DeleteVideo(movieVideo.VideoPath)
 	if err != nil {
-		app.errorJSON(w, err)
-		return
+		var notFound *os.PathError
+		if errors.As(err, &notFound) {
+			//app.errorJSON(w, errors.New("no video found in storage"))
+			fmt.Println("video not found in storage. Proceeding to cleanup from DB.")
+		} else {
+			app.errorJSON(w, err)
+			return
+		}
 	}
 	// delete the video from database
 	err = app.DB.DeleteMovieVideo(movieID, videoID)
