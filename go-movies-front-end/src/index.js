@@ -12,7 +12,7 @@ import ManageCatalogue from './components/ManageCatalogue';
 import GraphQL from './components/GraphQL';
 import Login from './components/Login';
 import Movie from './components/Movie';
-import UploadMovieVideo from './components/UploadMovieVideo';
+import ManageMovieVideo from './components/ManageMovieVideo';
 const router = createBrowserRouter(
   [
     {
@@ -42,7 +42,7 @@ const router = createBrowserRouter(
           path: "/admin/movie/:id", element: <EditMovie />
         },
         {
-          path: "/admin/movie/:id/upload", element: <UploadMovieVideo />
+          path: "/admin/movie/:id/upload", element: <ManageMovieVideo />
         },
         {
           path: "/manage-catalogue", element: <ManageCatalogue />

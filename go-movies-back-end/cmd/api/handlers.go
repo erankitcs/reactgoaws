@@ -293,7 +293,7 @@ func (app *application) getPoster(movie models.Movie) models.Movie {
 	}
 	var responseObj TheMovieDB
 
-	json.Unmarshal(bodyBytes, responseObj)
+	json.Unmarshal(bodyBytes, &responseObj)
 
 	if len(responseObj.Results) > 0 {
 		movie.Image = responseObj.Results[0].PosterPath
@@ -408,7 +408,7 @@ func (app *application) moviesGraphQL(w http.ResponseWriter, r *http.Request) {
 }
 
 // Upload Video Functinality
-func (app *application) MovieUpload(w http.ResponseWriter, r *http.Request) {
+func (app *application) MovieVidoeUpload(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	movieID, err := strconv.Atoi(id)
 	if err != nil {
@@ -453,7 +453,7 @@ func (app *application) MovieUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 // Movie Video Download
-func (app *application) MovieDownload(w http.ResponseWriter, r *http.Request) {
+func (app *application) MovieVideoDownload(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	movieID, err := strconv.Atoi(id)
 	if err != nil {
@@ -462,30 +462,27 @@ func (app *application) MovieDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the movie video from database
-	movieVideo, err := app.DB.GetMovieVideo(movieID)
+	movieVideo, err := app.DB.GetMovieVideo(movieID, -1)
 	if err != nil {
 		app.errorJSON(w, err)
 		return
 	}
-	// get the video file from s3
-	video, videoInfo, err := app.Storage.GetVideo(movieVideo)
+	// Make sure movie video is not empty
+	if movieVideo.VideoPath == "" {
+		app.errorJSON(w, errors.New("no video found"))
+		return
+	}
+	// get the video file from storage
+	videoInfo, err := app.Storage.GetVideo(movieVideo.VideoPath, w)
 	if err != nil {
+		fmt.Println(err)
 		app.errorJSON(w, err)
 		return
 	}
 	// write the video file to the response
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "video/mp4")
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", videoInfo.Size()))
-
-	_, err = io.Copy(w, video)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
-
-	defer video.Close()
-
 }
 
 // A fuction which can return a list of videos uploaded for given movie
@@ -505,4 +502,78 @@ func (app *application) MovieVideos(w http.ResponseWriter, r *http.Request) {
 	}
 	// return the response back
 	_ = app.writeJSON(w, http.StatusOK, movieVideos)
+}
+
+// Delete Movie Video function for given movie id and video id both
+func (app *application) DeleteMovieVideo(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	vid := chi.URLParam(r, "vid")
+	videoID, err := strconv.Atoi(vid)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideo, err := app.DB.GetMovieVideo(movieID, videoID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// delete the video from storage
+	err = app.Storage.DeleteVideo(movieVideo.VideoPath)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// delete the video from database
+	err = app.DB.DeleteMovieVideo(movieID, videoID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// return response back
+	resp := JSONReponse{
+		Error:   false,
+		Message: "movie video deleted",
+	}
+	_ = app.writeJSON(w, http.StatusOK, resp)
+}
+
+// Function to patch movievideos
+func (app *application) UpdateMovieVideo(w http.ResponseWriter, r *http.Request) {
+	var payload models.MovieVideo
+
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideo, err := app.DB.GetMovieVideo(payload.MovieID, payload.ID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	movieVideo.IsLatest = payload.IsLatest
+
+	err = app.DB.UpdateMovieVideo(*movieVideo)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// return response back
+	resp := JSONReponse{
+		Error:   false,
+		Message: "movie video updated",
+	}
+	_ = app.writeJSON(w, http.StatusOK, resp)
 }

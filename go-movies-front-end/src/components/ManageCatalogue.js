@@ -63,7 +63,7 @@ const ManageCatalogue = () => {
                                         }
                                     }
                                  >
-                                 <button className="btn btn-outline-success btn-sm">Upload Video</button>
+                                 <button className="btn btn-outline-success btn-sm">Manage Videos</button>
                                  </Link>
                             </td>
                         </tr>

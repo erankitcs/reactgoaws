@@ -6,3 +6,4 @@
 4. `go get github.com/golang-jwt/jwt/v4`
 5. `go get github.com/graphql-go/graphql`
 6. `go get github.com/google/uuid`
+7. `go get github.com/stretchr/testify`
