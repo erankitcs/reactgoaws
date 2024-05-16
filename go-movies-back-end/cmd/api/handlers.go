@@ -10,7 +10,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -292,7 +294,7 @@ func (app *application) getPoster(movie models.Movie) models.Movie {
 	}
 	var responseObj TheMovieDB
 
-	json.Unmarshal(bodyBytes, responseObj)
+	json.Unmarshal(bodyBytes, &responseObj)
 
 	if len(responseObj.Results) > 0 {
 		movie.Image = responseObj.Results[0].PosterPath
@@ -404,4 +406,180 @@ func (app *application) moviesGraphQL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(j)
+}
+
+// Upload Video Functinality
+func (app *application) MovieVidoeUpload(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// lets upload the video of the movie
+	fmt.Printf("upload recieved-%d", movieID)
+	moviefile, moviefile_header, err := app.readMultiPartForm(r)
+	if err != nil {
+		fmt.Println(err)
+		app.errorJSON(w, err)
+		return
+	}
+	fmt.Println("Calling video upload")
+	filefile_ext := strings.Split(moviefile_header.Filename, ".")[1]
+	path, err := app.Storage.UploadVideo(moviefile, filefile_ext)
+	if err != nil {
+		fmt.Println(err)
+		app.errorJSON(w, err)
+		return
+	}
+	// insert movie video into database
+	var movieVideo models.MovieVideo
+	movieVideo.MovieID = movieID
+	movieVideo.VideoPath = path
+	movieVideo.CreatedAt = time.Now()
+	movieVideo.IsLatest = true
+	fmt.Println("Adding  video upload into database")
+	mv, err := app.DB.InsertMovieVideo(movieVideo)
+	// return response back
+	if err != nil {
+		fmt.Println(err)
+		app.errorJSON(w, err)
+		// Removing vidoe file uploaded.
+		app.Storage.DeleteVideo(path)
+		return
+	}
+
+	_ = app.writeJSON(w, http.StatusOK, mv)
+}
+
+// Movie Video Download
+func (app *application) MovieVideoDownload(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideo, err := app.DB.GetMovieVideo(movieID, -1)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// Make sure movie video is not empty
+	if movieVideo.VideoPath == "" {
+		app.errorJSON(w, errors.New("no video found"))
+		return
+	}
+	// get the video file from storage
+	videoInfo, err := app.Storage.GetVideo(movieVideo.VideoPath, w)
+	if err != nil {
+		fmt.Println(err)
+		app.errorJSON(w, err)
+		return
+	}
+	// write the video file to the response
+	//w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "video/mp4")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", videoInfo.Size()))
+}
+
+// A fuction which can return a list of videos uploaded for given movie
+func (app *application) MovieVideos(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideos, err := app.DB.GetMovieVideos(movieID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// return the response back
+	_ = app.writeJSON(w, http.StatusOK, movieVideos)
+}
+
+// Delete Movie Video function for given movie id and video id both
+func (app *application) DeleteMovieVideo(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	vid := chi.URLParam(r, "vid")
+	videoID, err := strconv.Atoi(vid)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideo, err := app.DB.GetMovieVideo(movieID, videoID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// delete the video from storage
+	err = app.Storage.DeleteVideo(movieVideo.VideoPath)
+	if err != nil {
+		var notFound *os.PathError
+		if errors.As(err, &notFound) {
+			//app.errorJSON(w, errors.New("no video found in storage"))
+			fmt.Println("video not found in storage. Proceeding to cleanup from DB.")
+		} else {
+			app.errorJSON(w, err)
+			return
+		}
+	}
+	// delete the video from database
+	err = app.DB.DeleteMovieVideo(movieID, videoID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// return response back
+	resp := JSONReponse{
+		Error:   false,
+		Message: "movie video deleted",
+	}
+	_ = app.writeJSON(w, http.StatusOK, resp)
+}
+
+// Function to patch movievideos
+func (app *application) UpdateMovieVideo(w http.ResponseWriter, r *http.Request) {
+	var payload models.MovieVideo
+
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie video from database
+	movieVideo, err := app.DB.GetMovieVideo(payload.MovieID, payload.ID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	movieVideo.IsLatest = payload.IsLatest
+
+	err = app.DB.UpdateMovieVideo(*movieVideo)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// return response back
+	resp := JSONReponse{
+		Error:   false,
+		Message: "movie video updated",
+	}
+	_ = app.writeJSON(w, http.StatusOK, resp)
 }

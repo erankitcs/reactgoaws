@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 )
 
@@ -54,6 +56,20 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, data in
 	return nil
 }
 
+func (app *application) readMultiPartForm(r *http.Request) (multipart.File, *multipart.FileHeader, error) {
+	maxMultiPartBytes := 1024 * 1024 * 20 // 20 MB
+	r.ParseMultipartForm(int64(maxMultiPartBytes))
+	// Get the uploaded file from the request
+	file, fileheader, err := r.FormFile("movievideofile")
+	if err != nil {
+		return nil, nil, err
+	}
+	defer file.Close()
+
+	return file, fileheader, nil
+
+}
+
 func (app *application) errorJSON(w http.ResponseWriter, err error, status ...int) error {
 	statusCode := http.StatusBadRequest
 	if len(status) > 0 {
@@ -63,5 +79,6 @@ func (app *application) errorJSON(w http.ResponseWriter, err error, status ...in
 	var payload JSONReponse
 	payload.Error = true
 	payload.Message = err.Error()
+	fmt.Println(err)
 	return app.writeJSON(w, statusCode, payload)
 }

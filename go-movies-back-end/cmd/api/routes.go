@@ -17,7 +17,7 @@ func (app *application) routes() http.Handler {
 	mux.Get("/logout", app.logout)
 	mux.Get("/movies", app.AllMovies)
 	mux.Get("/movie/{id}", app.GetMovie)
-
+	mux.Get("/movie/{id}/video", app.MovieVideoDownload)
 	mux.Get("/genres", app.AllGenres)
 	mux.Get("/movies/genres/{id}", app.AllMoviesByGenre)
 
@@ -29,6 +29,10 @@ func (app *application) routes() http.Handler {
 		mux.Put("/movies/0", app.InsertMovie)
 		mux.Patch("/movies/{id}", app.UpdateMovie)
 		mux.Delete("/movies/{id}", app.DeleteMovie)
+		mux.Post("/movies/{id}/video", app.MovieVidoeUpload)
+		mux.Patch("/movies/{id}/videos/{vid}", app.UpdateMovieVideo)
+		mux.Get("/movies/{id}/videos", app.MovieVideos)
+		mux.Delete("/movies/{id}/videos/{vid}", app.DeleteMovieVideo)
 	})
 	return mux
 }

@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Movie struct {
 	ID          int       `json:"id"`
@@ -22,4 +24,12 @@ type Genre struct {
 	Checked   bool      `json:"checked"`
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
+}
+
+type MovieVideo struct {
+	ID        int       `json:"id"`
+	MovieID   int       `json:"movie_id"`
+	VideoPath string    `json:"video_path"`
+	CreatedAt time.Time `json:"created_at"`
+	IsLatest  bool      `json:"is_latest"`
 }

@@ -413,3 +413,149 @@ func (m *PostgresDBRepo) DeleteMovie(id int) error {
 
 	return nil
 }
+
+func (m *PostgresDBRepo) InsertMovieVideo(movieVideo models.MovieVideo) (*models.MovieVideo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	// Update all other movie videos for this movie to no longer be the latest
+	stmt := `update movies_videos set is_latest = 'f'
+			where movie_id = $1`
+	_, err := m.DB.ExecContext(ctx, stmt,
+		movieVideo.MovieID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	stmt = `insert into movies_videos (movie_id, video_path, is_latest, created_at)
+			values ($1, $2, $3, $4) returning id`
+	//var vid int
+	err = m.DB.QueryRowContext(ctx, stmt,
+		movieVideo.MovieID,
+		movieVideo.VideoPath,
+		movieVideo.IsLatest,
+		movieVideo.CreatedAt,
+	).Scan(
+		&movieVideo.ID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &movieVideo, nil
+}
+
+// Get Video from Movies_Videos table
+func (m *PostgresDBRepo) GetMovieVideo(id int, vid int) (*models.MovieVideo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	filter := ""
+	// if vid is positive then return that else return latest
+	if vid > 0 {
+		filter = fmt.Sprintf(" and id = %d", vid)
+	} else {
+		filter = " and is_latest = 't'"
+	}
+	defer cancel()
+	query := `
+		SELECT
+		 id, movie_id, video_path, is_latest, created_at
+		FROM
+		  movies_videos
+		where
+		  movie_id = $1 ` + filter + `
+		limit 1
+	`
+	var video models.MovieVideo
+	row := m.DB.QueryRowContext(ctx, query, id)
+
+	err := row.Scan(
+		&video.ID,
+		&video.MovieID,
+		&video.VideoPath,
+		&video.IsLatest,
+		&video.CreatedAt,
+	)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return &video, nil
+}
+
+// Get All Videos history from Movies_Videos table for given movie
+func (m *PostgresDBRepo) GetMovieVideos(id int) ([]models.MovieVideo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	query := `
+		SELECT
+		  id, movie_id, video_path, is_latest, created_at
+		FROM
+		  movies_videos
+		where
+		  movie_id = $1
+		order by created_at desc
+	`
+	rows, err := m.DB.QueryContext(ctx, query, id)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var videos []models.MovieVideo
+
+	for rows.Next() {
+		var video models.MovieVideo
+		err := rows.Scan(
+			&video.ID,
+			&video.MovieID,
+			&video.VideoPath,
+			&video.IsLatest,
+			&video.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		videos = append(videos, video)
+	}
+	return videos, nil
+}
+
+// Delete a movie video from the Movies_Videos table
+func (m *PostgresDBRepo) DeleteMovieVideo(id int, vid int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	stmt := `delete from movies_videos where id = $1 and movie_id=$2`
+	_, err := m.DB.ExecContext(ctx, stmt, vid, id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Update a movie video from the Movies_Videos table with movievideo object
+func (m *PostgresDBRepo) UpdateMovieVideo(movieVideo models.MovieVideo) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	stmt := `update movies_videos set is_latest = $1
+			where id = $2 and movie_id = $3`
+	_, err := m.DB.ExecContext(ctx, stmt,
+		movieVideo.IsLatest,
+		movieVideo.ID,
+		movieVideo.MovieID,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

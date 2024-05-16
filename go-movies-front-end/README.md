@@ -71,3 +71,8 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 
 ### Commands
 ` npm i react-router-dom`
+` npm install video-react`
+` npm i --save @fortawesome/fontawesome-svg-core`
+` npm i --save @fortawesome/free-solid-svg-icons`
+` npm i --save @fortawesome/free-regular-svg-icons`
+` npm i --save @fortawesome/react-fontawesome@latest`

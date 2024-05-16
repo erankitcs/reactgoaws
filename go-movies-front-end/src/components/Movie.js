@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import PlayMovie from "./PlayMovie";
+
 
 const Movie = () => {
     const [movie, setMovie] = useState({});
@@ -48,12 +50,18 @@ const Movie = () => {
             )}
             <hr></hr>
             {
-                movie.image !== ""  && 
-                <div className="mb-3">
-                    <img src={`https://image.tmdb.org/t/p/w200/${movie.image}`} alt="poster" />
-                </div>
+                // movie.image !== ""  && 
+                // <div className="mb-3">
+                //     <img src={`https://image.tmdb.org/t/p/w200/${movie.image}`} alt="poster" />
+                // </div>
             }
             <p>{movie.description}</p>
+            <hr></hr>
+            <PlayMovie
+                movieTitle={movie.title}
+                movieID={id}
+            ></PlayMovie>
+            
         </div>
     )
 }

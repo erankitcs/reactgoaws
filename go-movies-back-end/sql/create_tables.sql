@@ -69,6 +69,23 @@ ALTER TABLE public.users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     CACHE 1
 );
 
+CREATE TABLE public.movies_videos (
+    id integer NOT NULL,
+    movie_id integer NOT NULL,
+    video_path character varying(255) NOT NULL,
+    is_latest boolean NOT NULL,
+    created_at timestamp without time zone
+);
+
+ALTER TABLE public.movies_videos ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.movies_videos_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 --Data
 
 INSERT INTO public.genres (genre, created_at, updated_at)
