@@ -39,7 +39,7 @@ const PlayMovie = (props) => {
                     <Player
                         playsInline
                         src={videoUrl}
-                        fluid={false}
+                        fluid={true}
                         width={640}
                         height={360}
                     />

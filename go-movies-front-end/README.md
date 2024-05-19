@@ -76,3 +76,5 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 ` npm i --save @fortawesome/free-solid-svg-icons`
 ` npm i --save @fortawesome/free-regular-svg-icons`
 ` npm i --save @fortawesome/react-fontawesome@latest`
+` npm install react-bootstrap bootstrap`
+` npm install styled-components`

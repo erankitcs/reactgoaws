@@ -64,6 +64,8 @@ func main() {
 		CookieName:   "refresh_token",
 		CookieDomain: app.CookieDomain,
 	}
+	// Starting Socket consumption
+	go handleMovieChatMessages()
 	// start a web server
 	log.Println("Starting server on port", port)
 	//http.HandleFunc("/", app.Hello)

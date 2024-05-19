@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import PlayMovie from "./PlayMovie";
-
+import MovieChat from "./MovieChat";
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+ 
 
 const Movie = () => {
     const [movie, setMovie] = useState({});
@@ -41,7 +45,9 @@ const Movie = () => {
     }
 
     return(
-        <div>
+        <Container>
+        <Row>
+         <Col sm={10}>
             <h2>Movie: {movie.title}</h2>
             <small><em>{movie.release_date}, {movie.runtime} minutes, Rated {movie.mpaa_rating}</em></small>
             <br></br>
@@ -57,12 +63,27 @@ const Movie = () => {
             }
             <p>{movie.description}</p>
             <hr></hr>
-            <PlayMovie
-                movieTitle={movie.title}
-                movieID={id}
-            ></PlayMovie>
-            
-        </div>
+         </Col>
+        </Row>
+        
+        <Row>
+                <Col sm={10}>
+                    <PlayMovie
+                        movieTitle={movie.title}
+                        movieID={id}
+                    ></PlayMovie>
+                </Col>
+        </Row>
+        <Row >
+                <Col sm={10}>
+                <hr></hr>
+                 <MovieChat></MovieChat>
+                </Col>
+        </Row>
+
+            <hr></hr>
+   
+        </Container>
     )
 }
 
