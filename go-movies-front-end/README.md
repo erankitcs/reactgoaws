@@ -78,3 +78,4 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 ` npm i --save @fortawesome/react-fontawesome@latest`
 ` npm install react-bootstrap bootstrap`
 ` npm install styled-components`
+` npm install socket.io-client`

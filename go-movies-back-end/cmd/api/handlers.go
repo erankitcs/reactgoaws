@@ -583,3 +583,22 @@ func (app *application) UpdateMovieVideo(w http.ResponseWriter, r *http.Request)
 	}
 	_ = app.writeJSON(w, http.StatusOK, resp)
 }
+
+// A handler function to fetch all the movie chat history based on movieID
+func (app *application) MovieChatsHistory(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie chat from database
+	movieChats, err := app.DB.GetMovieChatsHistory(movieID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// return the response back
+	_ = app.writeJSON(w, http.StatusOK, movieChats)
+}

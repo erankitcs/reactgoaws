@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
+
+
 
 const ChatMessage = ({ author, text, date }) => {
   return (
@@ -14,66 +17,123 @@ const ChatMessage = ({ author, text, date }) => {
   );
 };
 
-const ChatBox = () => {
-  const [messages, setMessages] = useState([
-    {
-      author: 'You',
-      text: 'Hello, how can I help you today?',
-      date: '2023-05-01 10:00 AM',
-    },
-    {
-      author: 'John Doe',
-      text: 'Hi, I have a question about your product.',
-      date: '2023-05-01 10:02 AM',
-    },
-    {
-      author: 'You',
-      text: 'Sure, please go ahead and ask your question.',
-      date: '2023-05-01 10:03 AM',
-    },
-    {
-      author: 'John Doe',
-      text: 'Can you explain the pricing for your premium plan?',
-      date: '2023-05-01 10:05 AM',
-    },
-  ]);
-  const [newMessage, setNewMessage] = useState('');
 
-  const handleMessageChange = (e) => {
-    setNewMessage(e.target.value);
-  };
 
-  const handleMessageSubmit = (e) => {
+const MovieChat = (props) => {
+  const movieID = props.movieID;
+  const socket = io(`/movies/${movieID}/chat`);
+
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    fetchChatHistory(movieID);
+    socket.on('moviechat', (msg) => {
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    });
+
+    return () => {
+      socket.off('moviechat');
+    };
+  }, [movieID, socket]);
+
+  // Send Msg to socket
+  const sendMessage = (e) => {
     e.preventDefault();
-    if (newMessage.trim()) {
-      const currentDate = new Date().toLocaleString();
-      const newMessageObj = {
-        author: 'You',
-        text: newMessage,
-        date: currentDate,
-      };
-      setMessages([...messages, newMessageObj]);
-      setNewMessage('');
+    if (message) {
+    const newMessage = {
+      author: 'You',
+      text: message,
+      date: new Date().toLocaleString(),
+    };
+    socket.emit('moviechat', newMessage);
+    setMessage('');
+  }
+ };
 
-      try {
-        fetch('/api/chat/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newMessageObj),
-        })
-        .then((response) => {response.json()})
-        .then((msg) => {
-          console.log(msg);
-          setMessages([...messages, newMessageObj, botResponse]);
-        });
-        const response = await axios.post('/api/chat/messages', newMessageObj);
-        const botResponse = response.data;
+ // Load Chat History Function
+const fetchChatHistory = (id) => {
+  console.log("Loading chat history")
+  const headers = new Headers();
+  headers.append("Content-Type","application/json");
+  const requestOptions = {
+      method: "GET",
+      headers: headers
+  }
+    
+  fetch(`/movies/${id}/chats`,requestOptions)
+      .then( (response) => {
+          return response.json()
+      })
+      .then( (data) => {
+        setMessages(data)
+      })
+      .catch( (err => {
+          console.log(err)
+      }))
+
+
+};
+
+  // const [messages, setMessages] = useState([
+  //   {
+  //     author: 'You',
+  //     text: 'Hello, how can I help you today?',
+  //     date: '2023-05-01 10:00 AM',
+  //   },
+  //   {
+  //     author: 'John Doe',
+  //     text: 'Hi, I have a question about your product.',
+  //     date: '2023-05-01 10:02 AM',
+  //   },
+  //   {
+  //     author: 'You',
+  //     text: 'Sure, please go ahead and ask your question.',
+  //     date: '2023-05-01 10:03 AM',
+  //   },
+  //   {
+  //     author: 'John Doe',
+  //     text: 'Can you explain the pricing for your premium plan?',
+  //     date: '2023-05-01 10:05 AM',
+  //   },
+  // ]);
+  //const [newMessage, setNewMessage] = useState('');
+
+  //const handleMessageChange = (e) => {
+  //  setNewMessage(e.target.value);
+  //};
+
+  // const handleMessageSubmit = (e) => {
+  //   e.preventDefault();
+  //   if (newMessage.trim()) {
+  //     const currentDate = new Date().toLocaleString();
+  //     const newMessageObj = {
+  //       author: 'You',
+  //       text: newMessage,
+  //       date: currentDate,
+  //     };
+  //     setMessages([...messages, newMessageObj]);
+  //     setNewMessage('');
+
+  //     try {
+  //       fetch('/api/chat/messages', {
+  //         method: 'GET',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify(newMessageObj),
+  //       })
+  //       .then((response) => {response.json()})
+  //       .then((msg) => {
+  //         console.log(msg);
+  //         setMessages([...messages, newMessageObj, botResponse]);
+  //       });
+  //       const response = await axios.post('/api/chat/messages', newMessageObj);
+  //       const botResponse = response.data;
         
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-    }
-  };
+  //     } catch (error) {
+  //       console.error('Error sending message:', error);
+  //     }
+  //   }
+  // };
 
   return (
     <div>
@@ -88,14 +148,14 @@ const ChatBox = () => {
           />
         ))}
       </div>
-      <form onSubmit={handleMessageSubmit} className="mt-3">
+      <form onSubmit={sendMessage} className="mt-3">
         <div className="input-group">
           <input
             type="text"
             className="form-control"
             placeholder="Type your message..."
-            value={newMessage}
-            onChange={handleMessageChange}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
           />
           <button type="submit" className="btn btn-primary">
             Send
@@ -106,4 +166,4 @@ const ChatBox = () => {
   );
 };
 
-export default ChatBox;
+export default MovieChat;

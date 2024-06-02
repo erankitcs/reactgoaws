@@ -28,7 +28,7 @@ const Movie = () => {
             headers: headers
         }
 
-        fetch(`/movie/${id}`, requestOptions)
+        fetch(`/movies/${id}`, requestOptions)
             .then((response) => response.json())
             .then((data) => {
                 setMovie(data)
@@ -77,7 +77,9 @@ const Movie = () => {
         <Row >
                 <Col sm={10}>
                 <hr></hr>
-                 <MovieChat></MovieChat>
+                 <MovieChat
+                    movieID={id}
+                 ></MovieChat>
                 </Col>
         </Row>
 

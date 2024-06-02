@@ -559,3 +559,68 @@ func (m *PostgresDBRepo) UpdateMovieVideo(movieVideo models.MovieVideo) error {
 
 	return nil
 }
+
+// Function to read all the chat history for given movieID from movies_chats table
+// Join users table as well to get username
+func (m *PostgresDBRepo) GetMovieChatsHistory(id int) ([]models.MovieChat, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	query := `
+		SELECT
+		  m.id, m.movie_id, m.user_id, m.chattext, m.created_at, u.first_name, u.last_name
+		FROM
+		  movies_chats m
+		  left join users u on (m.user_id = u.id)
+		where
+		  movie_id = $1
+	`
+	rows, err := m.DB.QueryContext(ctx, query, id)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var chats []models.MovieChat
+
+	for rows.Next() {
+		var chat models.MovieChat
+		err := rows.Scan(
+			&chat.ID,
+			&chat.MovieID,
+			&chat.UserID,
+			&chat.ChatText,
+			&chat.CreatedAt,
+			&chat.FirstName,
+			&chat.LastName,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		chats = append(chats, chat)
+	}
+	return chats, nil
+}
+
+// Function to insert a new chat message into movies_chats table
+func (m *PostgresDBRepo) InsertMovieChat(chat models.MovieChat) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	stmt := `insert into movies_chats (movie_id, user_id, chattext, created_at)
+			values ($1, $2, $3, $4)`
+	_, err := m.DB.ExecContext(ctx, stmt,
+		chat.MovieID,
+		chat.UserID,
+		chat.ChatText,
+		chat.CreatedAt,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

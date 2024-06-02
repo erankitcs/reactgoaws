@@ -33,3 +33,13 @@ type MovieVideo struct {
 	CreatedAt time.Time `json:"created_at"`
 	IsLatest  bool      `json:"is_latest"`
 }
+
+type MovieChat struct {
+	ID        int       `json:"id"`
+	MovieID   int       `json:"movie_id"`
+	UserID    int       `json:"user_id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	ChatText  string    `json:"chattext"`
+	CreatedAt time.Time `json:"created_at"`
+}

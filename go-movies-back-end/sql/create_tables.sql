@@ -86,6 +86,24 @@ ALTER TABLE public.movies_videos ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTIT
     CACHE 1
 );
 
+-- Chat Table
+CREATE TABLE public.movies_chats (
+    id integer NOT NULL,
+    movie_id integer NOT NULL,
+    user_id integer NOT NULL,
+    chattext text,
+    created_at timestamp without time zone
+);
+
+ALTER TABLE public.movies_chats ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.movies_chats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 --Data
 
 INSERT INTO public.genres (genre, created_at, updated_at)

@@ -26,6 +26,7 @@ type application struct {
 	APIKey          string
 	rootStoragePath string
 	Storage         storage.VideoStorage
+	ChatManager     *ChatManager
 }
 
 func main() {
@@ -64,8 +65,8 @@ func main() {
 		CookieName:   "refresh_token",
 		CookieDomain: app.CookieDomain,
 	}
-	// Starting Socket consumption
-	go handleMovieChatMessages()
+	// Initialise Chat manager
+	app.ChatManager = NewChatManager()
 	// start a web server
 	log.Println("Starting server on port", port)
 	//http.HandleFunc("/", app.Hello)
