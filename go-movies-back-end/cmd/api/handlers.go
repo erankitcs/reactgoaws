@@ -602,3 +602,25 @@ func (app *application) MovieChatsHistory(w http.ResponseWriter, r *http.Request
 	// return the response back
 	_ = app.writeJSON(w, http.StatusOK, movieChats)
 }
+
+// Chat Handlers
+func (app *application) MovieChatsWS(w http.ResponseWriter, r *http.Request) {
+	// Gettig Movie ID from request
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	app.ChatManager.ServeChat(w, r, movieID)
+	if err != nil {
+		if err.Error() == "cant upgrade connection" {
+			app.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		} else {
+			app.errorJSON(w, err)
+			return
+		}
+	}
+
+}

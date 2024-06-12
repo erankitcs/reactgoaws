@@ -1,4 +1,4 @@
-package main
+package chatws
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,14 +16,18 @@ var (
 )
 
 type Client struct {
+	id      string
 	wsConn  *websocket.Conn
 	manager *ChatManager
+	movieID int
+
 	// egress is used to avoid concurrent writes on the websocket connection
 	egress chan Event
 }
 
-func NewClient(wsConn *websocket.Conn, manager *ChatManager) *Client {
-	return &Client{wsConn, manager, make(chan Event)}
+func NewClient(wsConn *websocket.Conn, manager *ChatManager, movieID int) *Client {
+	id := uuid.New().String()
+	return &Client{id, wsConn, manager, movieID, make(chan Event)}
 }
 
 func (c *Client) readMessages() {
@@ -41,7 +46,7 @@ func (c *Client) readMessages() {
 		_, payload, err := c.wsConn.ReadMessage()
 		fmt.Println("Event received...")
 		if err != nil {
-			log.Printf("errror reading event: %w", err)
+			log.Printf("errror reading event: %v", err)
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("errror reading event: %v", err)
 			}

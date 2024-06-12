@@ -1,4 +1,4 @@
-package main
+package chatws
 
 import (
 	"errors"
@@ -51,23 +51,25 @@ func (cm *ChatManager) routeEvent(event Event, c *Client) error {
 	}
 }
 
-func (cm *ChatManager) serveChat(w http.ResponseWriter, r *http.Request) {
+func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID int) error {
 	fmt.Println("connection recieved..")
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 
 	//defer ws.Close()
+	// Create a new client object
+	client := NewClient(ws, cm, movieID)
 
-	client := NewClient(ws, cm)
+	// Add client to the list of clients
 	cm.addClient(client)
 
 	// Start client process
 	go client.readMessages()
 	go client.writeMessages()
-
+	return nil
 }
 
 func (cm *ChatManager) addClient(client *Client) {
@@ -83,8 +85,14 @@ func (cm *ChatManager) removeClient(client *Client) {
 	if _, ok := cm.clients[client]; ok {
 		client.wsConn.Close()
 		delete(cm.clients, client)
+		// Broadcast to other clients
+		if err := UserLeftHandler(client); err != nil {
+			log.Printf("error in broadcasting user left event: %v", err)
+		}
+
+		fmt.Println("client removed")
 	}
-	fmt.Println("client removed")
+	fmt.Println("client is already removed")
 }
 
 func checkOrigin(r *http.Request) bool {

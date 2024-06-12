@@ -21,7 +21,7 @@ func (app *application) routes() http.Handler {
 	mux.Get("/genres", app.AllGenres)
 	mux.Get("/movies/genres/{id}", app.AllMoviesByGenre)
 	mux.Get("/movies/{id}/chats", app.MovieChatsHistory)
-	mux.Get("/movies/{id}/chat", app.ChatManager.serveChat)
+	mux.Get("/movies/{id}/chatws", app.MovieChatsWS)
 	mux.Post("/graph", app.moviesGraphQL)
 	mux.Route("/admin", func(mux chi.Router) {
 		mux.Use(app.authRequired)
