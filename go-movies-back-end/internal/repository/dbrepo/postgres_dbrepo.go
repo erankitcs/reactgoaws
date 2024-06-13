@@ -568,7 +568,7 @@ func (m *PostgresDBRepo) GetMovieChatsHistory(id int) ([]models.Event, error) {
 	defer cancel()
 	query := `
 		SELECT
-		  m.chattext, u.first_name, m.created_at
+		  m.chattext, CONCAT (u.first_name,' ', u.last_name ) as full_name , m.created_at
 		FROM
 		  movies_chats m
 		  left join users u on (m.user_id = u.id)
@@ -592,7 +592,7 @@ func (m *PostgresDBRepo) GetMovieChatsHistory(id int) ([]models.Event, error) {
 		var chat models.SendMessageEvent
 		err := rows.Scan(
 			&chat.Message,
-			&chat.From,
+			&chatPayload.From,
 			&chatPayload.Sent,
 		)
 

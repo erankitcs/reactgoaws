@@ -5,6 +5,7 @@ import SpinnerButton from "./form/SpinnerButton";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTrashCan, faCheck, faCheckSquare } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2'
+import DateFormater from "../utils/DateFormater";
 
 const ManageMovieVideo = () => {
     //const navigate = useNavigate();
@@ -38,11 +39,6 @@ const ManageMovieVideo = () => {
 
     const hasError = (key) => {
         return errors.indexOf(key) !== -1;
-    }
-
-    const formatDate = (date) => {
-        const d = new Date(date);
-        return d.toUTCString();
     }
 
     useEffect(() => {
@@ -325,7 +321,7 @@ const ManageMovieVideo = () => {
             {movieVideos.map((mv) => (
                 <tr key={mv.id}>
                     <td>{mv.video_path}</td>
-                    <td>{formatDate(mv.created_at)}</td>
+                    <td>{DateFormater(mv.created_at)}</td>
                     <td>{mv.is_latest && <button type="button" class="btn btn-outline-success btn-sm me-1" disabled> <FontAwesomeIcon icon={faCheckSquare} /></button>}
                     </td>
                     <td>

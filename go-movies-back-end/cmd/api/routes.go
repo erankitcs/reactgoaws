@@ -20,8 +20,6 @@ func (app *application) routes() http.Handler {
 	mux.Get("/movies/{id}/video", app.MovieVideoDownload)
 	mux.Get("/genres", app.AllGenres)
 	mux.Get("/movies/genres/{id}", app.AllMoviesByGenre)
-	mux.Get("/movies/{id}/chats", app.MovieChatsHistory)
-	mux.Get("/movies/{id}/chatws", app.MovieChatsWS)
 	mux.Post("/graph", app.moviesGraphQL)
 	mux.Route("/admin", func(mux chi.Router) {
 		mux.Use(app.authRequired)
@@ -34,6 +32,14 @@ func (app *application) routes() http.Handler {
 		mux.Patch("/movies/{id}/videos/{vid}", app.UpdateMovieVideo)
 		mux.Get("/movies/{id}/videos", app.MovieVideos)
 		mux.Delete("/movies/{id}/videos/{vid}", app.DeleteMovieVideo)
+		mux.Get("/movies/{id}/chats", app.MovieChatsHistory)
+		mux.Get("/movies/{id}/chatws", app.MovieChatsWS)
+	})
+
+	mux.Route("/protected", func(mux chi.Router) {
+		mux.Use(app.authRequired)
+		mux.Get("/movies/{id}/chats", app.MovieChatsHistory)
+		mux.Get("/movies/{id}/chatws", app.MovieChatsWS)
 	})
 	return mux
 }

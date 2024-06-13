@@ -3,26 +3,33 @@ import ChatMessage from "./chat/ChatMessage";
 import useCustomWebSocket from '../hooks/useWebSocket';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircle } from '@fortawesome/free-solid-svg-icons';
-
+import { useOutletContext } from "react-router-dom";
  // Load Chat History Function
- const fetchHistoricalMessages = async(id) => {
+ const fetchHistoricalMessages = async(id, jwtToken) => {
   console.log("Loading chat history")
   const headers = new Headers();
   headers.append("Content-Type","application/json");
+  headers.append("Authorization", "Bearer "+ jwtToken);
   const requestOptions = {
       method: "GET",
-      headers: headers
+      headers: headers,
+      credentials: "include"
   }
     
-  const response = await fetch(`/movies/${id}/chats`,requestOptions)
+  const response = await fetch(`/protected/movies/${id}/chats`,requestOptions)
   const data = await response.json();
   return data;
 };
 
 const MovieChat = (props) => {
   const movieID = props.movieID;
+  const { jwtToken, userName } = useOutletContext();
+  const [token] = useState(jwtToken);
+  console.log(token);
+  const { messages, sendJsonMessage, connectionStatus  } = useCustomWebSocket(`http://172.21.246.236:8080/protected/movies/${movieID}/chatws`, fetchHistoricalMessages, movieID, token  );
 
-  const { messages, sendJsonMessage, connectionStatus } = useCustomWebSocket(`http://172.21.246.236:8080/movies/${movieID}/chatws`, fetchHistoricalMessages, movieID );
+  // Custom Hook for WebSocket Connection
+ 
   const [message, setMessage] = useState();
 
   // useEffect(() => {
@@ -40,7 +47,6 @@ const MovieChat = (props) => {
     type: 'send_message',
     payload: {
       message: message,
-      from: 'Ankit', // Replace with your actual username
     }
   };
   sendJsonMessage(newMessage)
@@ -55,13 +61,14 @@ return (
       (<p>Connection Status: <FontAwesomeIcon icon={faCircle} beatFade size="xs" style={{color: "#ff0000", }} /></p>)}  
       <div className="chat-box border p-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
       {messages.map((message, index) => (
+           
           <ChatMessage 
             key={index}
             type = {message.type}
-            userid={1}
             username={message.payload.from}
             text={message.payload.message}
             date={message.payload.sent}
+            msgByMe={ message.payload.from === userName}
           />
         ))}
       </div>

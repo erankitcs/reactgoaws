@@ -5,6 +5,7 @@ import Alert from "./components/Alert";
 function App() {
 
   const [jwtToken, setJwtToken] = useState("");
+  const [userName, setUserName] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [alertClassName, setAlertClassName] = useState("d-none");
 
@@ -26,6 +27,7 @@ function App() {
         setJwtToken("")
         toggleRefresh(false)
       })
+      setUserName("")
       navigate("/login")
   }
 
@@ -84,7 +86,18 @@ function App() {
     }
   }, [jwtToken, toggleRefresh])
 
-  
+  useEffect( () => {
+    if (jwtToken !== "") {
+      // Decode Token to get Username
+      const base64Url = jwtToken.split('.')[1];
+      const base64 = base64Url.replace('-', '+').replace('_', '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const { name } = JSON.parse(jsonPayload);
+      setUserName(name)
+    }
+  }, [jwtToken])
 
   return (
     <div className="container">
@@ -127,7 +140,8 @@ function App() {
           className={alertClassName}
           />
           <Outlet context={{
-            jwtToken, 
+            jwtToken,
+            userName,
             setJwtToken,
             setAlertClassName,
             setAlertMessage,

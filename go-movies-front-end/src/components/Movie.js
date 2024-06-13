@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import PlayMovie from "./PlayMovie";
 import MovieChat from "./MovieChat";
 import Container from 'react-bootstrap/Container';
@@ -9,6 +9,7 @@ import Col from 'react-bootstrap/Col';
 
 const Movie = () => {
     const [movie, setMovie] = useState({});
+    const { jwtToken } = useOutletContext();
     let { id } = useParams();
     useEffect( () => {
         // let myMovie = {
@@ -74,16 +75,20 @@ const Movie = () => {
                     ></PlayMovie>
                 </Col>
         </Row>
-        <Row >
+        {jwtToken ? (
+            <Row>
                 <Col sm={10}>
-                <hr></hr>
-                 <MovieChat
-                    movieID={id}
-                 ></MovieChat>
+                    <hr></hr>
+                    <MovieChat
+                        movieID={id}
+                    ></MovieChat>
                 </Col>
-        </Row>
+            </Row>
+        ) : (
+            <></>
+        )}
 
-            <hr></hr>
+        <hr></hr>
    
         </Container>
     )

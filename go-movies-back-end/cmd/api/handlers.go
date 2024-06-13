@@ -613,7 +613,7 @@ func (app *application) MovieChatsWS(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, err)
 		return
 	}
-	app.ChatManager.ServeChat(w, r, movieID)
+	err = app.ChatManager.ServeChat(w, r, movieID)
 	if err != nil {
 		if err.Error() == "cant upgrade connection" {
 			app.errorJSON(w, err, http.StatusInternalServerError)

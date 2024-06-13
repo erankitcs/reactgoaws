@@ -25,6 +25,7 @@ func SendMessageHandler(event models.Event, client *Client) error {
 
 	var newMessageEvent models.NewMessageEvent
 	newMessageEvent.Sent = time.Now()
+	newMessageEvent.From = client.userName
 	newMessageEvent.SendMessageEvent = sendMessageEvent
 
 	//Marshal the new message event
@@ -41,7 +42,7 @@ func SendMessageHandler(event models.Event, client *Client) error {
 
 	// Broadcast the new event to all clients connected for same movied Id
 	for c := range client.manager.clients {
-		if client.movieID != c.movieID || client.id == c.id {
+		if client.movieID != c.movieID {
 			continue
 		}
 		c.egress <- newEvent
@@ -52,11 +53,11 @@ func SendMessageHandler(event models.Event, client *Client) error {
 // Will be called by client removal event
 func UserLeftHandler(client *Client) error {
 	var sendUserLeftEvent models.SendMessageEvent
-	sendUserLeftEvent.From = client.id
 	sendUserLeftEvent.Message = "User left"
 	var newUserLeftEvent models.NewMessageEvent
 	newUserLeftEvent.SendMessageEvent = sendUserLeftEvent
 	newUserLeftEvent.Sent = time.Now()
+	newUserLeftEvent.From = client.userName
 
 	//Marshal the user left event
 	userLeftEventPayload, err := json.Marshal(newUserLeftEvent)
@@ -83,12 +84,11 @@ func UserLeftHandler(client *Client) error {
 // Will be called by client add event
 func UserJoinedHandler(client *Client) error {
 	var sendUserJoinedEvent models.SendMessageEvent
-	sendUserJoinedEvent.From = client.id
 	sendUserJoinedEvent.Message = "User joined"
 	var newUserJoinedEvent models.NewMessageEvent
 	newUserJoinedEvent.SendMessageEvent = sendUserJoinedEvent
 	newUserJoinedEvent.Sent = time.Now()
-
+	newUserJoinedEvent.From = client.userName
 	//Marshal the user left event
 	userJoinedEventPayload, err := json.Marshal(newUserJoinedEvent)
 	if err != nil {

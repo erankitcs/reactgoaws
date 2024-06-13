@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"context"
+	"fmt"
+	"net/http"
+)
 
 func (app *application) enableCORS(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,11 +22,14 @@ func (app *application) enableCORS(h http.Handler) http.Handler {
 
 func (app *application) authRequired(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _, err := app.auth.GetTokenFromHeaderAndVerify(w, r)
+		_, claims, err := app.auth.GetTokenFromHeaderAndVerify(w, r)
 		if err != nil {
+			fmt.Println(err)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		h.ServeHTTP(w, r)
+		// Adding username within context
+		ctx := context.WithValue(r.Context(), "username", claims.Name)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

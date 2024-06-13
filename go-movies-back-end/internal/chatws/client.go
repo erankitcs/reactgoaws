@@ -17,18 +17,19 @@ var (
 )
 
 type Client struct {
-	id      string
-	wsConn  *websocket.Conn
-	manager *ChatManager
-	movieID int
+	id       string
+	wsConn   *websocket.Conn
+	manager  *ChatManager
+	movieID  int
+	userName string
 
 	// egress is used to avoid concurrent writes on the websocket connection
 	egress chan models.Event
 }
 
-func NewClient(wsConn *websocket.Conn, manager *ChatManager, movieID int) *Client {
+func NewClient(wsConn *websocket.Conn, manager *ChatManager, movieID int, userName string) *Client {
 	id := uuid.New().String()
-	return &Client{id, wsConn, manager, movieID, make(chan models.Event)}
+	return &Client{id, wsConn, manager, movieID, userName, make(chan models.Event)}
 }
 
 func (c *Client) readMessages() {
@@ -47,7 +48,7 @@ func (c *Client) readMessages() {
 		_, payload, err := c.wsConn.ReadMessage()
 		fmt.Println("Event received...")
 		if err != nil {
-			log.Printf("errror reading event: %v", err)
+			fmt.Println(err)
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("errror reading event: %v", err)
 			}

@@ -17,6 +17,8 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin:     checkOrigin,
+	// This is mae sure that secure authenticated socket is returning common agreed supprotocol
+	Subprotocols: []string{"chat"},
 }
 
 type ChatManager struct {
@@ -54,6 +56,16 @@ func (cm *ChatManager) routeEvent(event models.Event, c *Client) error {
 
 func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID int) error {
 	fmt.Println("connection recieved..")
+	// This also works. h can be pass into Upgrade function instead of nill. However, i have preferred to set it at upgrader initialization
+	//h := http.Header{}
+	// Setting Command understanding protocol as chat
+	//h.Set("Sec-Websocket-Protocol", "chat")
+
+	// Get User name from Context of request
+	userName := r.Context().Value("username").(string)
+
+	// Upgrade the HTTP connection to a WebSocket connection
+	// This will not return until the connection has been established.
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -62,7 +74,7 @@ func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID
 
 	//defer ws.Close()
 	// Create a new client object
-	client := NewClient(ws, cm, movieID)
+	client := NewClient(ws, cm, movieID, userName)
 
 	// Add client to the list of clients
 	cm.addClient(client)

@@ -12,11 +12,11 @@ type Event struct {
 
 type SendMessageEvent struct {
 	Message string `json:"message"`
-	From    string `json:"from"`
 }
 
 // NewMessageEvent is returned when responding to send_message
 type NewMessageEvent struct {
 	SendMessageEvent
+	From string    `json:"from"`
 	Sent time.Time `json:"sent"`
 }
