@@ -1,58 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
-
-
-
-const ChatMessage = ({ author, text, date }) => {
-  return (
-    <div className={`d-flex flex-row ${author === 'You' ? 'justify-content-end' : 'justify-content-start'} mb-3`}>
-      <div className={`chat-bubble ${author === 'You' ? 'bg-primary text-white' : 'bg-light'} p-3 rounded`}>
-        <div className="d-flex justify-content-between">
-          <small className="fw-bold">{author}</small>
-          <small className="text-muted">{date}</small>
-        </div>
-        <p className="mb-0">{text}</p>
-      </div>
-    </div>
-  );
-};
-
-
-
-const MovieChat = (props) => {
-  const movieID = props.movieID;
-  const socket = io(`/movies/${movieID}/chat`);
-
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-
-  useEffect(() => {
-    fetchChatHistory(movieID);
-    socket.on('moviechat', (msg) => {
-      setMessages((prevMessages) => [...prevMessages, msg]);
-    });
-
-    return () => {
-      socket.off('moviechat');
-    };
-  }, [movieID, socket]);
-
-  // Send Msg to socket
-  const sendMessage = (e) => {
-    e.preventDefault();
-    if (message) {
-    const newMessage = {
-      author: 'You',
-      text: message,
-      date: new Date().toLocaleString(),
-    };
-    socket.emit('moviechat', newMessage);
-    setMessage('');
-  }
- };
+import React, { useState } from 'react';
+import ChatMessage from "./chat/ChatMessage";
+import useCustomWebSocket from '../hooks/useWebSocket';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircle } from '@fortawesome/free-solid-svg-icons';
 
  // Load Chat History Function
-const fetchChatHistory = (id) => {
+ const fetchHistoricalMessages = async(id) => {
   console.log("Loading chat history")
   const headers = new Headers();
   headers.append("Content-Type","application/json");
@@ -61,94 +14,58 @@ const fetchChatHistory = (id) => {
       headers: headers
   }
     
-  fetch(`/movies/${id}/chats`,requestOptions)
-      .then( (response) => {
-          return response.json()
-      })
-      .then( (data) => {
-        setMessages(data)
-      })
-      .catch( (err => {
-          console.log(err)
-      }))
-
-
+  const response = await fetch(`/movies/${id}/chats`,requestOptions)
+  const data = await response.json();
+  return data;
 };
 
-  // const [messages, setMessages] = useState([
-  //   {
-  //     author: 'You',
-  //     text: 'Hello, how can I help you today?',
-  //     date: '2023-05-01 10:00 AM',
-  //   },
-  //   {
-  //     author: 'John Doe',
-  //     text: 'Hi, I have a question about your product.',
-  //     date: '2023-05-01 10:02 AM',
-  //   },
-  //   {
-  //     author: 'You',
-  //     text: 'Sure, please go ahead and ask your question.',
-  //     date: '2023-05-01 10:03 AM',
-  //   },
-  //   {
-  //     author: 'John Doe',
-  //     text: 'Can you explain the pricing for your premium plan?',
-  //     date: '2023-05-01 10:05 AM',
-  //   },
-  // ]);
-  //const [newMessage, setNewMessage] = useState('');
+const MovieChat = (props) => {
+  const movieID = props.movieID;
 
-  //const handleMessageChange = (e) => {
-  //  setNewMessage(e.target.value);
-  //};
+  const { messages, sendJsonMessage, connectionStatus } = useCustomWebSocket(`http://172.21.246.236:8080/movies/${movieID}/chatws`, fetchHistoricalMessages, movieID );
+  const [message, setMessage] = useState();
 
-  // const handleMessageSubmit = (e) => {
-  //   e.preventDefault();
-  //   if (newMessage.trim()) {
-  //     const currentDate = new Date().toLocaleString();
-  //     const newMessageObj = {
-  //       author: 'You',
-  //       text: newMessage,
-  //       date: currentDate,
-  //     };
-  //     setMessages([...messages, newMessageObj]);
-  //     setNewMessage('');
+  // useEffect(() => {
+  //   fetchChatHistory(movieID);
+  // }, [movieID]);
 
-  //     try {
-  //       fetch('/api/chat/messages', {
-  //         method: 'GET',
-  //         headers: { 'Content-Type': 'application/json' },
-  //         body: JSON.stringify(newMessageObj),
-  //       })
-  //       .then((response) => {response.json()})
-  //       .then((msg) => {
-  //         console.log(msg);
-  //         setMessages([...messages, newMessageObj, botResponse]);
-  //       });
-  //       const response = await axios.post('/api/chat/messages', newMessageObj);
-  //       const botResponse = response.data;
-        
-  //     } catch (error) {
-  //       console.error('Error sending message:', error);
-  //     }
-  //   }
-  // };
 
-  return (
+ // Send Msg to socket
+ const sendMessageEvent = (e) => {
+  e.preventDefault();
+  if (message) {
+  console.log("Sending message to socket");
+  console.log(message);
+  const newMessage = {
+    type: 'send_message',
+    payload: {
+      message: message,
+      from: 'Ankit', // Replace with your actual username
+    }
+  };
+  sendJsonMessage(newMessage)
+  setMessage('');
+}
+};
+
+return (
     <div>
-      <h2>Chat</h2>
+      <h2>Chat </h2>
+      { connectionStatus === 'Open' ? (<p>Connection Status: <FontAwesomeIcon icon={faCircle} beatFade size="xs" style={{color: "#1cca96",}} /></p>):
+      (<p>Connection Status: <FontAwesomeIcon icon={faCircle} beatFade size="xs" style={{color: "#ff0000", }} /></p>)}  
       <div className="chat-box border p-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-        {messages.map((message, index) => (
-          <ChatMessage
+      {messages.map((message, index) => (
+          <ChatMessage 
             key={index}
-            author={message.author}
-            text={message.text}
-            date={message.date}
+            type = {message.type}
+            userid={1}
+            username={message.payload.from}
+            text={message.payload.message}
+            date={message.payload.sent}
           />
         ))}
       </div>
-      <form onSubmit={sendMessage} className="mt-3">
+      <form onSubmit={sendMessageEvent} className="mt-3">
         <div className="input-group">
           <input
             type="text"

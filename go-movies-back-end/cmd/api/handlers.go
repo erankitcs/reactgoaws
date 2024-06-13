@@ -594,13 +594,14 @@ func (app *application) MovieChatsHistory(w http.ResponseWriter, r *http.Request
 	}
 
 	// get the movie chat from database
-	movieChats, err := app.DB.GetMovieChatsHistory(movieID)
+	movieChatEvents, err := app.DB.GetMovieChatsHistory(movieID)
 	if err != nil {
 		app.errorJSON(w, err)
 		return
 	}
+	// write the response back
 	// return the response back
-	_ = app.writeJSON(w, http.StatusOK, movieChats)
+	_ = app.writeJSON(w, http.StatusOK, movieChatEvents)
 }
 
 // Chat Handlers

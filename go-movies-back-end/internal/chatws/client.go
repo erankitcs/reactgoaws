@@ -1,6 +1,7 @@
 package chatws
 
 import (
+	"backend/internal/models"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,12 +23,12 @@ type Client struct {
 	movieID int
 
 	// egress is used to avoid concurrent writes on the websocket connection
-	egress chan Event
+	egress chan models.Event
 }
 
 func NewClient(wsConn *websocket.Conn, manager *ChatManager, movieID int) *Client {
 	id := uuid.New().String()
-	return &Client{id, wsConn, manager, movieID, make(chan Event)}
+	return &Client{id, wsConn, manager, movieID, make(chan models.Event)}
 }
 
 func (c *Client) readMessages() {
@@ -52,7 +53,7 @@ func (c *Client) readMessages() {
 			}
 			break
 		}
-		var event Event
+		var event models.Event
 		if err := json.Unmarshal(payload, &event); err != nil {
 			log.Printf("error marshalling message: %v", err)
 			break

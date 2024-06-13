@@ -23,6 +23,6 @@ type DatabaseRepo interface {
 	GetMovieVideos(id int) ([]models.MovieVideo, error)
 	DeleteMovieVideo(id int, vid int) error
 	UpdateMovieVideo(movieVideo models.MovieVideo) error
-	GetMovieChatsHistory(id int) ([]models.MovieChat, error)
+	GetMovieChatsHistory(id int) ([]models.Event, error)
 	InsertMovieChat(chat models.MovieChat) error
 }

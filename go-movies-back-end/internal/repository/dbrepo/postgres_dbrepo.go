@@ -4,6 +4,7 @@ import (
 	"backend/internal/models"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -562,12 +563,12 @@ func (m *PostgresDBRepo) UpdateMovieVideo(movieVideo models.MovieVideo) error {
 
 // Function to read all the chat history for given movieID from movies_chats table
 // Join users table as well to get username
-func (m *PostgresDBRepo) GetMovieChatsHistory(id int) ([]models.MovieChat, error) {
+func (m *PostgresDBRepo) GetMovieChatsHistory(id int) ([]models.Event, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 	query := `
 		SELECT
-		  m.id, m.movie_id, m.user_id, m.chattext, m.created_at, u.first_name, u.last_name
+		  m.chattext, u.first_name, m.created_at
 		FROM
 		  movies_chats m
 		  left join users u on (m.user_id = u.id)
@@ -582,27 +583,33 @@ func (m *PostgresDBRepo) GetMovieChatsHistory(id int) ([]models.MovieChat, error
 
 	defer rows.Close()
 
-	var chats []models.MovieChat
+	var chatEvents []models.Event
 
 	for rows.Next() {
-		var chat models.MovieChat
+		var chatEvent models.Event
+		chatEvent.Type = "chat_history"
+		var chatPayload models.NewMessageEvent
+		var chat models.SendMessageEvent
 		err := rows.Scan(
-			&chat.ID,
-			&chat.MovieID,
-			&chat.UserID,
-			&chat.ChatText,
-			&chat.CreatedAt,
-			&chat.FirstName,
-			&chat.LastName,
+			&chat.Message,
+			&chat.From,
+			&chatPayload.Sent,
 		)
 
 		if err != nil {
 			return nil, err
 		}
+		chatPayload.SendMessageEvent = chat
+		//Marshal the chat payload
+		chatJSONPayload, err := json.Marshal(chatPayload)
+		if err != nil {
+			return nil, err
+		}
+		chatEvent.Payload = chatJSONPayload
 
-		chats = append(chats, chat)
+		chatEvents = append(chatEvents, chatEvent)
 	}
-	return chats, nil
+	return chatEvents, nil
 }
 
 // Function to insert a new chat message into movies_chats table

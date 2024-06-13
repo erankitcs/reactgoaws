@@ -17,6 +17,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0",
     "react-scripts": "5.0.1",
+    "react-use-websocket": "^4.8.1",
     "socket.io-client": "^4.7.5",
     "styled-components": "^6.1.11",
     "sweetalert2": "^11.10.6",

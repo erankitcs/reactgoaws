@@ -1,6 +1,7 @@
 package chatws
 
 import (
+	"backend/internal/models"
 	"errors"
 	"fmt"
 	"log"
@@ -38,7 +39,7 @@ func (cm *ChatManager) SetupEventHandlers() {
 	cm.handlers[EventTypeSendMessage] = SendMessageHandler
 }
 
-func (cm *ChatManager) routeEvent(event Event, c *Client) error {
+func (cm *ChatManager) routeEvent(event models.Event, c *Client) error {
 	// Check if event type is available then excutre its handler.
 	if handler, ok := cm.handlers[event.Type]; ok {
 		if err := handler(event, c); err != nil {
@@ -69,6 +70,11 @@ func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID
 	// Start client process
 	go client.readMessages()
 	go client.writeMessages()
+
+	//Broadcast to other clients
+	if err := UserJoinedHandler(client); err != nil {
+		log.Printf("error in broadcasting user left event: %v", err)
+	}
 	return nil
 }
 
