@@ -23,9 +23,10 @@ type Auth struct {
 }
 
 type jwtUser struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	ID        int      `json:"id"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
+	Roles     []string `json:"roles"`
 }
 
 type TokenPairs struct {
@@ -35,7 +36,8 @@ type TokenPairs struct {
 
 type Claims struct {
 	jwt.RegisteredClaims
-	Name string `json:"name"`
+	Name  string   `json:"name"`
+	Roles []string `json:"roles"`
 }
 
 func (j *Auth) GenerateTokenPair(user *jwtUser) (TokenPairs, error) {
@@ -51,6 +53,7 @@ func (j *Auth) GenerateTokenPair(user *jwtUser) (TokenPairs, error) {
 	claims["typ"] = "JWT"
 	// Set the expiry for jWT
 	claims["exp"] = time.Now().UTC().Add(j.TokenExpiry).Unix()
+	claims["roles"] = user.Roles
 
 	// Create a signed Token
 	signedAccessToken, err := token.SignedString([]byte(j.Secret))
@@ -181,4 +184,20 @@ func (j *Auth) GetTokenFromHeaderAndVerify(w http.ResponseWriter, r *http.Reques
 	}
 
 	return token, claims, nil
+}
+
+// Authorization Validation
+func (c *Claims) HasRight(verifyRole string) bool {
+	// Check if claims contain admin role
+	roleExit := false
+	roles := c.Roles
+	// Loop through roles and check if admin
+	for _, role := range roles {
+		if role == verifyRole {
+			roleExit = true
+			break
+		}
+	}
+
+	return roleExit
 }

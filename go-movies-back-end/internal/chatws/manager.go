@@ -11,6 +11,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type contextKey int
+
+const (
+	contextKeyUserName contextKey = iota
+)
+
 type ClientList map[*Client]bool
 
 var upgrader = websocket.Upgrader{
@@ -54,7 +60,7 @@ func (cm *ChatManager) routeEvent(event models.Event, c *Client) error {
 	}
 }
 
-func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID int) error {
+func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID int, userName string) error {
 	fmt.Println("connection recieved..")
 	// This also works. h can be pass into Upgrade function instead of nill. However, i have preferred to set it at upgrader initialization
 	//h := http.Header{}
@@ -62,7 +68,7 @@ func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID
 	//h.Set("Sec-Websocket-Protocol", "chat")
 
 	// Get User name from Context of request
-	userName := r.Context().Value("username").(string)
+	//userName := r.Context().Value(contextKeyUserName).(string)
 
 	// Upgrade the HTTP connection to a WebSocket connection
 	// This will not return until the connection has been established.

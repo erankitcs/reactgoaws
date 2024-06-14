@@ -56,9 +56,11 @@ CREATE TABLE public.users (
     last_name character varying(255),
     email character varying(255),
     password character varying(255),
+    approved boolean NOT NULL,
     created_at timestamp without time zone,
     updated_at timestamp without time zone 
 );
+
 
 ALTER TABLE public.users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.users_id_seq
@@ -68,6 +70,24 @@ ALTER TABLE public.users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );
+
+CREATE TABLE public.users_roles (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    role character varying(255),
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone 
+);
+
+ALTER TABLE public.users_roles ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 
 CREATE TABLE public.movies_videos (
     id integer NOT NULL,
@@ -155,5 +175,11 @@ values (3,9);
 INSERT INTO public.movies_genres (movie_id, genre_id)
 values (3,7);
 /* password is secret   */
-INSERT INTO public.users (first_name, last_name, email, password, created_at, updated_at)
-values ('Admin', 'User', 'admin@example.com','$2a$12$jesVW07pibHnym7QbMN/BOHseAM65uDVetWADC.jeaIoi/6mlGN66', '2022-09-23','2022-09-23');
+INSERT INTO public.users (first_name, last_name, email, password, approved, created_at, updated_at)
+values ('Admin', 'User', 'admin@example.com','$2a$12$jesVW07pibHnym7QbMN/BOHseAM65uDVetWADC.jeaIoi/6mlGN66', 'true', '2022-09-23','2022-09-23');
+
+INSERT INTO public.users_roles (user_id, role, created_at, updated_at)
+values (1,'admin','2022-09-23','2022-09-23');
+
+INSERT INTO public.users_roles (user_id, role, created_at, updated_at)
+values (1,'user','2022-09-23','2022-09-23');

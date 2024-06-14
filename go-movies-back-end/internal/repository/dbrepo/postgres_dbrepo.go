@@ -236,6 +236,7 @@ func (m *PostgresDBRepo) GetUserByEmail(email string) (*models.User, error) {
 		FROM 
 		  users
 		where
+		  approved = 't' and
 		  email = $1
 	`
 	var user models.User
@@ -255,6 +256,35 @@ func (m *PostgresDBRepo) GetUserByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 
+	// All the roles for the user
+	// get all the roles from the roles table filter by user id
+	// and add to the user struct
+	query = `
+		select
+		  role
+		from
+		  users_roles
+		where
+		  user_id = $1
+	`
+	rolesRows, err := m.DB.QueryContext(ctx, query, user.ID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	defer rolesRows.Close()
+
+	var roles []*models.Role
+
+	for rolesRows.Next() {
+		var role models.Role
+		rolesRows.Scan(
+			&role.Role,
+		)
+		roles = append(roles, &role)
+	}
+
+	user.Roles = roles
 	return &user, nil
 }
 
@@ -623,6 +653,91 @@ func (m *PostgresDBRepo) InsertMovieChat(chat models.MovieChat) error {
 		chat.UserID,
 		chat.ChatText,
 		chat.CreatedAt,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Function to insert a user into users table
+func (m *PostgresDBRepo) InsertUser(user models.User) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	stmt := `insert into users (email, first_name, last_name, password, approved, created_at, updated_at)
+			values ($1, $2, $3, $4, $5, $6, $7) returning id`
+	var newID int
+	// Begin a transaction
+	tx, err := m.DB.BeginTx(ctx, nil)
+	// Handle error
+	if err != nil {
+		return 0, err
+	}
+	// Close the transaction at the end
+	defer tx.Rollback()
+
+	// Execute the query
+	err = tx.QueryRowContext(ctx, stmt,
+		user.Email,
+		user.FirstName,
+		user.LastName,
+		user.Password,
+		user.Approved,
+		user.CreatedAt,
+		user.UpdatedAt,
+	).Scan(&newID)
+
+	if err != nil {
+		return 0, err
+	}
+	// Inserting Roles into users_roles table
+	// Loop through all the roles and insert into users_roles table
+	for _, role := range user.Roles {
+		stmt = `insert into users_roles (user_id, role, created_at, updated_at) values ($1, $2, $3, $4)`
+		_, err := tx.ExecContext(ctx, stmt, newID, role.Role, user.CreatedAt, user.UpdatedAt)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	// Committing the transaction
+	err = tx.Commit()
+	if err != nil {
+		return 0, err
+	}
+
+	return newID, nil
+}
+
+// Function to delete a user in users table
+func (m *PostgresDBRepo) DeleteUser(id int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	stmt := `delete from users where id = $1`
+	_, err := m.DB.ExecContext(ctx, stmt, id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Function to update a user in users table
+func (m *PostgresDBRepo) UpdateUser(user models.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+	stmt := `update users set email = $1, first_name = $2, last_name = $3, password = $4, updated_at = $5
+			where id = $6`
+	_, err := m.DB.ExecContext(ctx, stmt,
+		user.Email,
+		user.FirstName,
+		user.LastName,
+		user.Password,
+		user.UpdatedAt,
+		user.ID,
 	)
 
 	if err != nil {

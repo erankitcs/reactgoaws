@@ -6,6 +6,9 @@ function App() {
 
   const [jwtToken, setJwtToken] = useState("");
   const [userName, setUserName] = useState("");
+  const [roles, setRoles] = useState([]);
+  const [isAdmin, SetIsAdmin] = useState(false);
+  const [isUser, SetIsUser] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [alertClassName, setAlertClassName] = useState("d-none");
 
@@ -28,6 +31,9 @@ function App() {
         toggleRefresh(false)
       })
       setUserName("")
+      setRoles([])
+      SetIsAdmin(false)
+      SetIsUser(false)
       navigate("/login")
   }
 
@@ -94,8 +100,19 @@ function App() {
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
-      const { name } = JSON.parse(jsonPayload);
+      const { name, roles } = JSON.parse(jsonPayload);
       setUserName(name)
+      serRoles(roles)
+      // Check if roles includes admin
+      if (roles.includes("admin")) {
+        SetIsAdmin(true)
+      } else {
+        SetIsAdmin(false)
+      }
+      // Check if roles includes user
+      if (roles.includes("user")) {
+        SetIsUser(true)
+      }
     }
   }, [jwtToken])
 
@@ -123,7 +140,8 @@ function App() {
               <Link to="/movies" className="list-group-item list-group-item-action">Movies</Link>
               <Link to="/genres" className="list-group-item list-group-item-action">Genres</Link>
               {
-                jwtToken !== "" &&
+                jwtToken !== "" && isAdmin &&
+                // Admin Links
                 <>
                   <Link to="/admin/movie/0" className="list-group-item list-group-item-action">Add Movie</Link>
                   <Link to="/manage-catalogue" className="list-group-item list-group-item-action">Manage Catalogue</Link>
@@ -142,6 +160,8 @@ function App() {
           <Outlet context={{
             jwtToken,
             userName,
+            isAdmin,
+            isUser,
             setJwtToken,
             setAlertClassName,
             setAlertMessage,

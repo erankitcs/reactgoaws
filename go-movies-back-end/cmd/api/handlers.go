@@ -95,11 +95,14 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
 		return
 	}
+
 	// create a jwt user
 	u := jwtUser{
 		ID:        user.ID,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
+		// Pass list of roles from user roles
+		Roles: user.GetRoles(),
 	}
 	//generate tokens
 	tokens, err := app.auth.GenerateTokenPair(&u)
@@ -613,7 +616,12 @@ func (app *application) MovieChatsWS(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, err)
 		return
 	}
-	err = app.ChatManager.ServeChat(w, r, movieID)
+	// Getting Username from request context
+	userName := r.Context().Value(contextKeyUserName).(string)
+
+	// Upgrade the connection to a WebSocket
+
+	err = app.ChatManager.ServeChat(w, r, movieID, userName)
 	if err != nil {
 		if err.Error() == "cant upgrade connection" {
 			app.errorJSON(w, err, http.StatusInternalServerError)
@@ -625,3 +633,59 @@ func (app *application) MovieChatsWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+// User Management handlers
+
+// A handler function to create a new user
+func (app *application) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+
+	err := app.readJSON(w, r, &user)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// Validating password
+	err = user.Validate()
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Validating password
+	err = user.HashPassword()
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+
+	// Check if user oles has admin role if yes, make sure, its not autoapproved user
+	// if user has admin role, then make sure, approved field of user is false
+	// if user is not admin, then make sure, approved field of user is true
+	if user.HasRole("admin") {
+		user.Approved = false
+	} else {
+		user.Approved = true
+	}
+
+	// Inserting user into database
+
+	userID, err := app.DB.InsertUser(user)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Setting up new ID genereated
+	user.ID = userID
+
+	// Removing password from user object
+	user.Password = ""
+
+	_ = app.writeJSON(w, http.StatusCreated, user)
+}
+
+// A handler function to get a user by ID
