@@ -97,15 +97,9 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create a jwt user
-	u := jwtUser{
-		ID:        user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		// Pass list of roles from user roles
-		Roles: user.GetRoles(),
-	}
+	u := user.ToJwtUser()
 	//generate tokens
-	tokens, err := app.auth.GenerateTokenPair(&u)
+	tokens, err := app.auth.GenerateTokenPair(u)
 	if err != nil {
 		app.errorJSON(w, err)
 		return
@@ -145,13 +139,9 @@ func (app *application) refreshToken(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			u := jwtUser{
-				ID:        user.ID,
-				FirstName: user.FirstName,
-				LastName:  user.LastName,
-			}
+			u := user.ToJwtUser()
 
-			tokenPairs, err := app.auth.GenerateTokenPair(&u)
+			tokenPairs, err := app.auth.GenerateTokenPair(u)
 			if err != nil {
 				app.errorJSON(w, errors.New("error generating token"), http.StatusUnauthorized)
 				return

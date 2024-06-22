@@ -297,6 +297,7 @@ func (m *PostgresDBRepo) GetUserByID(id int) (*models.User, error) {
 		FROM 
 		  users
 		where
+		  approved = 't' and
 		  id = $1
 	`
 	var user models.User
@@ -315,6 +316,36 @@ func (m *PostgresDBRepo) GetUserByID(id int) (*models.User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// All the roles for the user
+	// get all the roles from the roles table filter by user id
+	// and add to the user struct
+	query = `
+		select
+		  role
+		from
+		  users_roles
+		where
+		  user_id = $1
+	`
+	rolesRows, err := m.DB.QueryContext(ctx, query, user.ID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	defer rolesRows.Close()
+
+	var roles []*models.Role
+
+	for rolesRows.Next() {
+		var role models.Role
+		rolesRows.Scan(
+			&role.Role,
+		)
+		roles = append(roles, &role)
+	}
+
+	user.Roles = roles
 
 	return &user, nil
 }

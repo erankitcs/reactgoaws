@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/internal/models"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,13 +23,6 @@ type Auth struct {
 	CookieName    string
 }
 
-type jwtUser struct {
-	ID        int      `json:"id"`
-	FirstName string   `json:"first_name"`
-	LastName  string   `json:"last_name"`
-	Roles     []string `json:"roles"`
-}
-
 type TokenPairs struct {
 	Token        string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -40,7 +34,7 @@ type Claims struct {
 	Roles []string `json:"roles"`
 }
 
-func (j *Auth) GenerateTokenPair(user *jwtUser) (TokenPairs, error) {
+func (j *Auth) GenerateTokenPair(user *models.JwtUser) (TokenPairs, error) {
 	// Create a token
 	token := jwt.New(jwt.SigningMethodHS256)
 	// Set the claim

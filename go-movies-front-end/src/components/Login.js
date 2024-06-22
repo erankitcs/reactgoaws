@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Input from "./form/Input";
 import { useNavigate, useOutletContext } from "react-router-dom";
 
@@ -6,8 +6,17 @@ const Login = () => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const {setJwtToken, setAlertClassName, setAlertMessage, toggleRefresh} = useOutletContext();
+    const { jwtToken, setJwtToken, setAlertClassName, setAlertMessage, toggleRefresh} = useOutletContext();
     const navigate = useNavigate();
+
+
+    useEffect(() => {
+        if (jwtToken) {
+            navigate("/")
+        }
+    }, [jwtToken, navigate])
+
+
     const handleSubmit = (event) => {
         event.preventDefault();
         // console.log("email/password",email, password)
@@ -41,6 +50,7 @@ const Login = () => {
                 if (data.error) {
                     setAlertClassName("alert-danger");
                     setAlertMessage(data.message);
+                    setJwtToken("")
                 } else {
                     setJwtToken(data.access_token);
                     setAlertClassName("d-none");

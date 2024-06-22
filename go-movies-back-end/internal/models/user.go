@@ -39,6 +39,13 @@ type Role struct {
 	UpdatedAt time.Time `json:"-"`
 }
 
+type JwtUser struct {
+	ID        int      `json:"id"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
+	Roles     []string `json:"roles"`
+}
+
 // Function to compare a plain-text password with a hashed password
 
 func (u *User) PasswordMatches(plainText string) (bool, error) {
@@ -120,4 +127,14 @@ func (u *User) GetRoles() []string {
 		roles[i] = role.Role
 	}
 	return roles
+}
+
+// Function to create JWT User
+func (u *User) ToJwtUser() *JwtUser {
+	return &JwtUser{
+		ID:        u.ID,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Roles:     u.GetRoles(),
+	}
 }
