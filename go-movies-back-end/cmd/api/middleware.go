@@ -4,9 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type contextKey int
+
+// ContxtUser Struct to hold user information within context
+type ContxtUser struct {
+	Name string
+	Id   int
+}
 
 const (
 	contextKeyUserName contextKey = iota
@@ -60,7 +67,18 @@ func (app *application) authRequiredProtected(h http.Handler) http.Handler {
 			return
 		}
 		// Adding username within context
-		ctx := context.WithValue(r.Context(), contextKeyUserName, claims.Name)
+		userId, err := strconv.Atoi(claims.Subject)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		contextUser := ContxtUser{
+			Name: claims.Name,
+			Id:   userId,
+		}
+		ctx := context.WithValue(r.Context(), contextKeyUserName, contextUser)
+
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -606,12 +606,12 @@ func (app *application) MovieChatsWS(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, err)
 		return
 	}
-	// Getting Username from request context
-	userName := r.Context().Value(contextKeyUserName).(string)
+	// Getting Context Values
+	contextUser := r.Context().Value(contextKeyUserName).(ContxtUser)
 
 	// Upgrade the connection to a WebSocket
 
-	err = app.ChatManager.ServeChat(w, r, movieID, userName)
+	err = app.ChatManager.ServeChat(w, r, movieID, contextUser.Name, contextUser.Id)
 	if err != nil {
 		if err.Error() == "cant upgrade connection" {
 			app.errorJSON(w, err, http.StatusInternalServerError)

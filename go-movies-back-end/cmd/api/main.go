@@ -67,7 +67,7 @@ func main() {
 		CookieDomain: app.CookieDomain,
 	}
 	// Initialise Chat manager
-	app.ChatManager = chatws.NewChatManager()
+	app.ChatManager = chatws.NewChatManager(app.DB)
 	// start a web server
 	log.Println("Starting server on port", port)
 	//http.HandleFunc("/", app.Hello)

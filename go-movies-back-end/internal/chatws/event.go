@@ -47,6 +47,20 @@ func SendMessageHandler(event models.Event, client *Client) error {
 		}
 		c.egress <- newEvent
 	}
+
+	/// Movie Chat persistance.
+	var movieChat models.MovieChat
+	movieChat.MovieID = client.movieID
+	movieChat.UserID = client.userID
+	movieChat.ChatText = newMessageEvent.Message
+	movieChat.CreatedAt = newMessageEvent.Sent
+
+	/// Save msg into database
+	err = client.manager.db.InsertMovieChat(movieChat)
+	if err != nil {
+		return fmt.Errorf("failed to save message: %w", err)
+	}
+
 	return nil
 }
 

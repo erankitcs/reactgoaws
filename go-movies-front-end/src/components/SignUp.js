@@ -46,8 +46,9 @@ const SignUp = () => {
         for (let key in role) {
             // if checked is true
             if (role[key]) {
-                // push key to tempRoles
-                tempRoles.push(key)
+                // push key to tempRoles as role tag
+
+                tempRoles.push({"role": key})
             }
         }
         // set roles state with tempRoles
@@ -196,7 +197,7 @@ const SignUp = () => {
                 <p>Roles</p>
                 <Checkbox
                     title="user"
-                    name={"role"}
+                    name={"userrole"}
                     key={1}
                     id={"user"}
                     onChange={(event) => {
@@ -207,7 +208,7 @@ const SignUp = () => {
                 />
                 <Checkbox
                     title={"admin"}
-                    name={"role"}
+                    name={"adminrole"}
                     key={2}
                     id={"admin"}
                     onChange={(event) => {

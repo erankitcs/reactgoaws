@@ -22,14 +22,14 @@ type Client struct {
 	manager  *ChatManager
 	movieID  int
 	userName string
-
+	userID   int
 	// egress is used to avoid concurrent writes on the websocket connection
 	egress chan models.Event
 }
 
-func NewClient(wsConn *websocket.Conn, manager *ChatManager, movieID int, userName string) *Client {
+func NewClient(wsConn *websocket.Conn, manager *ChatManager, movieID int, userName string, userID int) *Client {
 	id := uuid.New().String()
-	return &Client{id, wsConn, manager, movieID, userName, make(chan models.Event)}
+	return &Client{id, wsConn, manager, movieID, userName, userID, make(chan models.Event)}
 }
 
 func (c *Client) readMessages() {

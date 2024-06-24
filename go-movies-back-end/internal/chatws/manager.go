@@ -2,6 +2,7 @@ package chatws
 
 import (
 	"backend/internal/models"
+	"backend/internal/repository"
 	"errors"
 	"fmt"
 	"log"
@@ -31,12 +32,14 @@ type ChatManager struct {
 	clients ClientList
 	sync.RWMutex
 	handlers map[string]EventHandler
+	db       repository.DatabaseRepo
 }
 
-func NewChatManager() *ChatManager {
+func NewChatManager(db repository.DatabaseRepo) *ChatManager {
 	cm := &ChatManager{
 		clients:  make(ClientList),
 		handlers: make(map[string]EventHandler),
+		db:       db,
 	}
 	// Setup event handlers
 	cm.SetupEventHandlers()
@@ -60,7 +63,7 @@ func (cm *ChatManager) routeEvent(event models.Event, c *Client) error {
 	}
 }
 
-func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID int, userName string) error {
+func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID int, userName string, userId int) error {
 	fmt.Println("connection recieved..")
 	// This also works. h can be pass into Upgrade function instead of nill. However, i have preferred to set it at upgrader initialization
 	//h := http.Header{}
@@ -80,7 +83,7 @@ func (cm *ChatManager) ServeChat(w http.ResponseWriter, r *http.Request, movieID
 
 	//defer ws.Close()
 	// Create a new client object
-	client := NewClient(ws, cm, movieID, userName)
+	client := NewClient(ws, cm, movieID, userName, userId)
 
 	// Add client to the list of clients
 	cm.addClient(client)

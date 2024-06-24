@@ -11,6 +11,8 @@ const Login = () => {
 
 
     useEffect(() => {
+        setAlertClassName("d-none");
+        setAlertMessage("");
         if (jwtToken) {
             navigate("/")
         }
