@@ -95,14 +95,11 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
 		return
 	}
+
 	// create a jwt user
-	u := jwtUser{
-		ID:        user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-	}
+	u := user.ToJwtUser()
 	//generate tokens
-	tokens, err := app.auth.GenerateTokenPair(&u)
+	tokens, err := app.auth.GenerateTokenPair(u)
 	if err != nil {
 		app.errorJSON(w, err)
 		return
@@ -142,13 +139,9 @@ func (app *application) refreshToken(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			u := jwtUser{
-				ID:        user.ID,
-				FirstName: user.FirstName,
-				LastName:  user.LastName,
-			}
+			u := user.ToJwtUser()
 
-			tokenPairs, err := app.auth.GenerateTokenPair(&u)
+			tokenPairs, err := app.auth.GenerateTokenPair(u)
 			if err != nil {
 				app.errorJSON(w, errors.New("error generating token"), http.StatusUnauthorized)
 				return
@@ -583,3 +576,106 @@ func (app *application) UpdateMovieVideo(w http.ResponseWriter, r *http.Request)
 	}
 	_ = app.writeJSON(w, http.StatusOK, resp)
 }
+
+// A handler function to fetch all the movie chat history based on movieID
+func (app *application) MovieChatsHistory(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// get the movie chat from database
+	movieChatEvents, err := app.DB.GetMovieChatsHistory(movieID)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// write the response back
+	// return the response back
+	_ = app.writeJSON(w, http.StatusOK, movieChatEvents)
+}
+
+// Chat Handlers
+func (app *application) MovieChatsWS(w http.ResponseWriter, r *http.Request) {
+	// Gettig Movie ID from request
+	id := chi.URLParam(r, "id")
+	movieID, err := strconv.Atoi(id)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// Getting Context Values
+	contextUser := r.Context().Value(contextKeyUserName).(ContxtUser)
+
+	// Upgrade the connection to a WebSocket
+
+	err = app.ChatManager.ServeChat(w, r, movieID, contextUser.Name, contextUser.Id)
+	if err != nil {
+		if err.Error() == "cant upgrade connection" {
+			app.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		} else {
+			app.errorJSON(w, err)
+			return
+		}
+	}
+
+}
+
+// User Management handlers
+
+// A handler function to create a new user
+func (app *application) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+
+	err := app.readJSON(w, r, &user)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	// Validating password
+	err = user.Validate()
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Validating password
+	err = user.HashPassword()
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+
+	// Check if user oles has admin role if yes, make sure, its not autoapproved user
+	// if user has admin role, then make sure, approved field of user is false
+	// if user is not admin, then make sure, approved field of user is true
+	if user.HasRole("admin") {
+		user.Approved = false
+	} else {
+		user.Approved = true
+	}
+
+	// Inserting user into database
+
+	userID, err := app.DB.InsertUser(user)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	// Setting up new ID genereated
+	user.ID = userID
+
+	// Removing password from user object
+	user.Password = ""
+
+	_ = app.writeJSON(w, http.StatusCreated, user)
+}
+
+// A handler function to get a user by ID

@@ -13,6 +13,7 @@ import GraphQL from './components/GraphQL';
 import Login from './components/Login';
 import Movie from './components/Movie';
 import ManageMovieVideo from './components/ManageMovieVideo';
+import SignUp from './components/SignUp';
 const router = createBrowserRouter(
   [
     {
@@ -52,6 +53,9 @@ const router = createBrowserRouter(
         },
         {
           path: "/login", element: <Login />
+        },
+        {
+          path: "/signup", element: <SignUp />
         }
       ]
     }

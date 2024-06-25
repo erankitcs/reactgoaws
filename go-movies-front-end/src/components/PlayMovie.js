@@ -15,7 +15,7 @@ const PlayMovie = (props) => {
                 method: "GET",
                 headers: headers
                 }
-              const response = await fetch(`/movie/${props.movieID}/video`,requestOptions);
+              const response = await fetch(`/movies/${props.movieID}/video`,requestOptions);
               console.log(response.status);
               if (response.ok) {
                 //console.log(response.status);
@@ -39,7 +39,7 @@ const PlayMovie = (props) => {
                     <Player
                         playsInline
                         src={videoUrl}
-                        fluid={false}
+                        fluid={true}
                         width={640}
                         height={360}
                     />

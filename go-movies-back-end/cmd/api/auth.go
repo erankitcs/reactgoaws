@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/internal/models"
 	"errors"
 	"fmt"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/gorilla/websocket"
 )
 
 type Auth struct {
@@ -21,12 +23,6 @@ type Auth struct {
 	CookieName    string
 }
 
-type jwtUser struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-}
-
 type TokenPairs struct {
 	Token        string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -34,9 +30,11 @@ type TokenPairs struct {
 
 type Claims struct {
 	jwt.RegisteredClaims
+	Name  string   `json:"name"`
+	Roles []string `json:"roles"`
 }
 
-func (j *Auth) GenerateTokenPair(user *jwtUser) (TokenPairs, error) {
+func (j *Auth) GenerateTokenPair(user *models.JwtUser) (TokenPairs, error) {
 	// Create a token
 	token := jwt.New(jwt.SigningMethodHS256)
 	// Set the claim
@@ -49,6 +47,7 @@ func (j *Auth) GenerateTokenPair(user *jwtUser) (TokenPairs, error) {
 	claims["typ"] = "JWT"
 	// Set the expiry for jWT
 	claims["exp"] = time.Now().UTC().Add(j.TokenExpiry).Unix()
+	claims["roles"] = user.Roles
 
 	// Create a signed Token
 	signedAccessToken, err := token.SignedString([]byte(j.Secret))
@@ -112,23 +111,50 @@ func (j *Auth) GetTokenFromHeaderAndVerify(w http.ResponseWriter, r *http.Reques
 	w.Header().Add("Vary", "Authorization")
 
 	// get auth header
-	authHeader := r.Header.Get("Authorization")
+	// Checking if connection is for WebSocket
+	var isSocket = false
+	var AuthHeader = "Authorization"
+	var token string
+	if websocket.IsWebSocketUpgrade(r) {
+		isSocket = true
+		AuthHeader = "Sec-WebSocket-Protocol"
+	}
+
+	authHeader := r.Header.Get(AuthHeader)
+	fmt.Println(authHeader)
+
 	// sanity check
 	if authHeader == "" {
 		return "", nil, errors.New("no auth header")
 	}
 	//split the header on spaces
-	headerParts := strings.Split(authHeader, " ")
-	if len(headerParts) != 2 {
-		return "", nil, errors.New("invalid auth header")
+	if isSocket {
+		headerParts := strings.Split(authHeader, " ")
+		if len(headerParts) != 3 {
+			return "", nil, errors.New("invalid socket auth header")
+		}
+		// check to see if we have the word Bearer
+		if headerParts[0] != "Authorization," {
+			return "", nil, errors.New("invalid auth header")
+		}
+		token = strings.TrimSuffix(headerParts[1], ",")
+
+	} else {
+		headerParts := strings.Split(authHeader, " ")
+		if len(headerParts) != 2 {
+			return "", nil, errors.New("invalid auth header")
+		}
+
+		// check to see if we have the word Bearer
+		if headerParts[0] != "Bearer" {
+			return "", nil, errors.New("invalid auth header")
+		}
+		token = headerParts[1]
 	}
 
-	// check to see if we have the word Bearer
-	if headerParts[0] != "Bearer" {
-		return "", nil, errors.New("invalid auth header")
-	}
-	token := headerParts[1]
+	fmt.Println(token)
 
+	//
 	//declare an empty claims
 	claims := &Claims{}
 
@@ -152,4 +178,20 @@ func (j *Auth) GetTokenFromHeaderAndVerify(w http.ResponseWriter, r *http.Reques
 	}
 
 	return token, claims, nil
+}
+
+// Authorization Validation
+func (c *Claims) HasRight(verifyRole string) bool {
+	// Check if claims contain admin role
+	roleExit := false
+	roles := c.Roles
+	// Loop through roles and check if admin
+	for _, role := range roles {
+		if role == verifyRole {
+			roleExit = true
+			break
+		}
+	}
+
+	return roleExit
 }

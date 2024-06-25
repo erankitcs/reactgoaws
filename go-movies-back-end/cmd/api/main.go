@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/internal/chatws"
 	"backend/internal/repository"
 	"backend/internal/repository/dbrepo"
 	"backend/internal/storage"
@@ -26,6 +27,7 @@ type application struct {
 	APIKey          string
 	rootStoragePath string
 	Storage         storage.VideoStorage
+	ChatManager     *chatws.ChatManager
 }
 
 func main() {
@@ -64,6 +66,8 @@ func main() {
 		CookieName:   "refresh_token",
 		CookieDomain: app.CookieDomain,
 	}
+	// Initialise Chat manager
+	app.ChatManager = chatws.NewChatManager(app.DB)
 	// start a web server
 	log.Println("Starting server on port", port)
 	//http.HandleFunc("/", app.Hello)
