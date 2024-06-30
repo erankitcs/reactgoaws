@@ -3,6 +3,8 @@ package repository
 import (
 	"backend/internal/models"
 	"database/sql"
+
+	"github.com/go-redis/redis"
 )
 
 type DatabaseRepo interface {
@@ -31,4 +33,11 @@ type DatabaseRepo interface {
 	InsertUser(user models.User) (int, error)
 	UpdateUser(user models.User) error
 	DeleteUser(id int) error
+}
+
+type SessionRepo interface {
+	Connection() *redis.Client
+	Set(key, value string) error
+	Get(key string) (string, error)
+	Delete(key string) error
 }

@@ -16,3 +16,14 @@ services:
    volumes:
      - ./posgres-data:/var/lib/postgresql/data
      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+  redis:
+   image: redis:latest
+   restart: always
+   ports:
+      - "6379:6379"
+   environment:
+      - REDIS_PASSWORD=redis
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+   volumes:
+      - ./redis-data:/root/redis

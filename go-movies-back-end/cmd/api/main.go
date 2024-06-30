@@ -4,6 +4,7 @@ import (
 	"backend/internal/chatws"
 	"backend/internal/repository"
 	"backend/internal/repository/dbrepo"
+	"backend/internal/repository/sessionrepo"
 	"backend/internal/storage"
 	"backend/internal/storage/localstorage"
 	"flag"
@@ -28,9 +29,15 @@ type application struct {
 	rootStoragePath string
 	Storage         storage.VideoStorage
 	ChatManager     *chatws.ChatManager
+	// Session Store
+	SessionStoreAdr  string
+	SessionStorePass string
+	SStore           repository.SessionRepo
 }
 
 func main() {
+
+	//var ctx = context.Background()
 	// set application config
 	var app application
 	// read from command line like flag
@@ -42,6 +49,8 @@ func main() {
 	flag.StringVar(&app.Domain, "domain", "example.com", "domain")
 	flag.StringVar(&app.APIKey, "api-key", "xyz", "api key")
 	flag.StringVar(&app.rootStoragePath, "rootstorage-path", "./moviestorage", "Root Storage Path")
+	flag.StringVar(&app.SessionStorePass, "sessionstore-password", "", "Redis Session Store Password")
+
 	flag.Parse()
 	// connect to the database
 	conn, err := app.connectToDB()
@@ -54,6 +63,15 @@ func main() {
 	app.Storage = &localstorage.LocalStorage{RootPath: app.rootStoragePath}
 
 	//fmt.Println(app.Storage.StorageDetails())
+	// Initialize Session Store
+	sstoreclient, err := app.connectSessionStore()
+	//fmt.Println(sstoreclient)
+	if err != nil {
+		log.Fatal(err)
+	}
+	//fmt.Println(sstoreclient)
+	app.SStore = &sessionrepo.RedisSessionRepo{RDB: sstoreclient}
+	defer app.SStore.Connection().Close()
 
 	app.auth = Auth{
 		Issuer:        app.JWTIssuer,
